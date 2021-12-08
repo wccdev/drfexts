@@ -1,9 +1,10 @@
 drfexts
 =======
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Python Version](https://img.shields.io/badge/python-3.8-blue)
+[![GitHub license](https://img.shields.io/github/license/aiden520/drfexts)](https://github.com/aiden520/drfexts/blob/master/LICENSE)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/drfexts)
 [![pypi-version](https://img.shields.io/pypi/v/drfexts.svg)](https://pypi.python.org/pypi/drfexts)
+[![GitHub stars](https://img.shields.io/github/stars/aiden520/drfexts)](https://github.com/aiden520/drfexts/stargazers)
 [![Build Status](https://app.travis-ci.com/aiden520/drfexts.svg?branch=master)](https://app.travis-ci.com/aiden520/drfexts)
 
 **Extensions for Django REST Framework**

@@ -4,8 +4,10 @@ version = "0.1.0"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
+keywords = ["django", "restframework"]
 homepage = "https://github.com/aiden520/drfexts"
 repository = "https://github.com/aiden520/drfexts"
+license = "MIT"
 include = [
     "LICENSE",
 ]
@@ -26,6 +28,7 @@ djangorestframework-csv = "^2.1.1"
 openpyxl = "^3.0.9"
 
 [tool.poetry.dev-dependencies]
+pytest = "^3.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
