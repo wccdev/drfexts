@@ -1,17 +1,23 @@
 [tool.poetry]
-name = "wcc-python-sdk-drfexts"
-version = "1.4.6"
+name = "drfexts"
+version = "0.1.0"
+readme = "README.md"
 description = "Django Restframework Utils"
-authors = ["aiden <aiden_lu@wochacha.com>"]
+authors = ["aiden <allaher@icloud.com>"]
+homepage = "https://github.com/aiden520/drfexts"
+repository = "https://github.com/aiden520/drfexts"
+include = [
+    "LICENSE",
+]
 
-[[tool.poetry.source]]
-name = "wcc-pypi"
-url = "https://pypi.wochacha.cn/simple/"
-default = true
+#[[tool.poetry.source]]
+#name = "wcc-pypi"
+#url = "https://pypi.wochacha.cn/simple/"
+#default = true
 
 [tool.poetry.dependencies]
 python = "^3.8"
-django = "^3.2.9"
+django = "^3.0"
 django-storages = "^1.12.3"
 django-filter = "^21.1"
 djangorestframework = "^3.12.4"
