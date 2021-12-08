@@ -8,14 +8,14 @@ from django.core.exceptions import ImproperlyConfigured
 from rest_framework.settings import api_settings
 from rest_framework.viewsets import GenericViewSet
 
-from drf_extensions.filtersets.backends import (
+from drfexts.filtersets.backends import (
     AutoFilterBackendMixin,
     DjangoFilterBackendListFixMixin,
     DynamicFilterBackend,
     OrderingByFieldNameFilterMixin,
 )
-from drf_extensions.metadata import DynamicTableMetadata
-from drf_extensions.renderers import CustomExcelRenderer, CustomCSVRenderer
+from drfexts.metadata import DynamicTableMetadata
+from drfexts.renderers import CustomExcelRenderer, CustomCSVRenderer
 
 
 class EagerLoadingMixin:
