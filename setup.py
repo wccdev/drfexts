@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='wcc-python-sdk-drfexts',
+    name='drfexts',
     version='1.4.6',
     author='da_group',
-    author_email='da_group@wochacha.com',
+    author_email='allaher@icloud.com',
     description='Django drf extension package',
     packages=find_packages(),
     zip_safe=False,
