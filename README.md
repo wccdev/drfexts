@@ -116,3 +116,7 @@ $ ./manage.py test
 -----
 
 -   Initial release
+
+## Thanks
+
+[![PyCharm](docs/pycharm.svg)](https://www.jetbrains.com/?from=lyanna)
