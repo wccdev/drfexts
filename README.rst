@@ -6,6 +6,7 @@ drfexts
 
 .. |License: MIT| image:: https://img.shields.io/badge/License-MIT-yellow.svg
 .. _build status: https://opensource.org/licenses/MIT
+
 .. |build status| image:: https://secure.travis-ci.org/mjumbewu/django-rest-framework-csv.png?branch=master
 .. _build status: https://travis-ci.org/mjumbewu/django-rest-framework-csv
 
