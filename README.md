@@ -10,7 +10,7 @@ drfexts
 
 **Extensions for Django REST Framework**
 
-**Author:** aidenlu.
+**Author:** aiden lu.
 
 Installation
 ------------
