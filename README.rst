@@ -2,7 +2,7 @@
 drfexts
 =======================
 
-|build status|_
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |build status|_
 
 .. |build status| image:: https://secure.travis-ci.org/mjumbewu/django-rest-framework-csv.png?branch=master
 .. _build status: https://travis-ci.org/mjumbewu/django-rest-framework-csv
