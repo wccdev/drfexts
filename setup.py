@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='drfexts',
-    version='1.4.6',
-    author='da_group',
+    version='0.1.1',
+    author='aiden lu',
     author_email='allaher@icloud.com',
     description='Django drf extension package',
     packages=find_packages(),
     zip_safe=False,
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     include_package_data=True,
     install_requires=[
         "django>=3.1.7",
@@ -25,10 +25,9 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 )

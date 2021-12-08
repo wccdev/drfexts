@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "drfexts"
-version = "0.1.0"
+version = "0.1.1"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -18,7 +18,7 @@ include = [
 #default = true
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 django = "^3.0"
 django-storages = "^1.12.3"
 django-filter = "^21.1"
