@@ -2,6 +2,7 @@ import collections
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.utils.translation import gettext_lazy as _
+from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.fields import Field, ChoiceField, to_choices_dict, flatten_choices_dict
 
@@ -106,6 +107,24 @@ class MultiSlugRelatedField(RelatedField):
         return dict(zip(self.slug_fields, (getattr(value, slug_field) for slug_field in self.slug_fields)))
 
 
+class StringListField(serializers.ListField):
+    child = serializers.CharField()
 
 
+class IntegerListField(serializers.ListField):
+    child = serializers.IntegerField()
 
+
+class IsNullField(serializers.ReadOnlyField):
+    default_error_messages = {
+        'invalid': _('Must be a valid boolean.')
+    }
+
+    def to_representation(self, value):
+        return value is None
+
+
+class IsNotNullField(IsNullField):
+
+    def to_representation(self, value):
+        return value is not None

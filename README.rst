@@ -1,0 +1,121 @@
+=======================
+drfexts
+=======================
+
+|build status|_
+
+.. |build status| image:: https://secure.travis-ci.org/mjumbewu/django-rest-framework-csv.png?branch=master
+.. _build status: https://travis-ci.org/mjumbewu/django-rest-framework-csv
+
+**Extensions for Django REST Framework**
+
+**Author:** Aiden Lu.
+
+Installation
+------------
+
+.. code-block:: bash
+
+    $ pip install drfexts
+
+Usage
+-----
+
+*views.py*
+
+.. code-block:: python
+
+    from rest_framework.views import APIView
+    from rest_framework.settings import api_settings
+    from drfexts.viewsets import ExportMixin
+
+    class MyView (ExportMixin, APIView):
+        ...
+
+Ordered Fields
+--------------
+
+By default, a ``CSVRenderer`` will output fields in sorted order. To specify
+an alternative field ordering you can override the ``header`` attribute. There
+are two ways to do this:
+
+1) Create a new renderer class and override the ``header`` attribute directly:
+
+    .. code-block:: python
+
+        class MyUserRenderer (CSVRenderer):
+            header = ['first', 'last', 'email']
+
+        @api_view(['GET'])
+        @renderer_classes((MyUserRenderer,))
+        def my_view(request):
+            users = User.objects.filter(active=True)
+            content = [{'first': user.first_name,
+                        'last': user.last_name,
+                        'email': user.email}
+                       for user in users]
+            return Response(content)
+
+2) Use the ``renderer_context`` to override the field ordering on the fly:
+
+    .. code-block:: python
+
+        class MyView (APIView):
+            renderer_classes = [CSVRenderer]
+
+            def get_renderer_context(self):
+                context = super().get_renderer_context()
+                context['header'] = (
+                    self.request.GET['fields'].split(',')
+                    if 'fields' in self.request.GET else None)
+                return context
+
+            ...
+
+Labeled Fields
+--------------
+
+Custom labels can be applied to the ``CSVRenderer`` using the ``labels`` dict
+attribute where each key corresponds to the header and the value corresponds
+to the custom label for that header.
+
+1) Create a new renderer class and override the ``header`` and ``labels``
+attribute directly:
+
+    .. code-block:: python
+
+        class MyBazRenderer (CSVRenderer):
+            header = ['foo.bar']
+            labels = {
+                'foo.bar': 'baz'
+            }
+
+Pagination
+----------
+
+Using the renderer with paginated data is also possible with the
+new `PaginatedCSVRenderer` class and should be used with views that
+paginate data
+
+
+For more information about using renderers with Django REST Framework, see the
+`API Guide <http://django-rest-framework.org/api-guide/renderers/>`_ or the
+`Tutorial <http://django-rest-framework.org/tutorial/1-serialization/>`_.
+
+Running the tests
+-----------------
+
+To run the tests against the current environment:
+
+.. code-block:: bash
+
+    $ ./manage.py test
+
+
+Changelog
+=========
+
+1.0.0
+-----
+
+- Initial release

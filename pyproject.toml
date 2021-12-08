@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "wcc-python-sdk-drfexts"
+version = "1.4.6"
+description = "Django Restframework Utils"
+authors = ["aiden <aiden_lu@wochacha.com>"]
+
+[[tool.poetry.source]]
+name = "wcc-pypi"
+url = "https://pypi.wochacha.cn/simple/"
+default = true
+
+[tool.poetry.dependencies]
+python = "^3.8"
+django = "^3.2.9"
+django-storages = "^1.12.3"
+django-filter = "^21.1"
+djangorestframework = "^3.12.4"
+pip = "^21.3.1"
+djangorestframework-csv = "^2.1.1"
+openpyxl = "^3.0.9"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

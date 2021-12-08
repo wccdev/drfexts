@@ -1,27 +1,91 @@
 from itertools import chain
 
+from django.conf import settings
 from django.db import models
+from django.db.models import Func, SET_NULL
+
+from .fields import AutoUUIDField, DescriptionField, UpdatedAtField, CreatedAtField, ModifierCharField
+
+
+class IsNull(Func):
+    template = '%(expressions)s IS NULL'
+    arity = 1
+
+
+class NotNull(Func):
+    template = '%(expressions)s IS NOT NULL'
+    arity = 1
 
 
 class VirtualForeignKey(models.ForeignKey):
     """
     Virtual foreignkey which won't create concret relationship on database level.
     """
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("db_constraint", False)
         super().__init__(*args, **kwargs)
 
 
-class VirtualManyToManyField(models.ManyToManyField):
+class VirtualManyToMany(models.ManyToManyField):
     """
-    Virtual many-to-many relation which won't create concret relationship on database level.
+    Virtual foreignkey which won't create concret relationship on database level.
     """
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("db_constraint", False)
         super().__init__(*args, **kwargs)
 
 
-class ToDictModel(models.Model):
+class BaseModel(models.Model):
+    """
+    标准抽象模型模型,可直接继承使用
+    """
+    description = DescriptionField()  # 描述
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    class Meta:
+        abstract = True
+        verbose_name = '基本模型'
+        verbose_name_plural = verbose_name
+
+
+class UUIDModel(BaseModel):
+    """
+    标准抽象模型模型,可直接继承使用
+    """
+    id = AutoUUIDField()
+    description = DescriptionField()  # 描述
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    class Meta:
+        abstract = True
+        verbose_name = 'UUID模型'
+        verbose_name_plural = verbose_name
+
+
+class CoreModel(models.Model):
+    """
+    核心标准抽象模型模型,可直接继承使用
+    增加审计字段, 覆盖字段时, 字段名称请勿修改, 必须统一审计字段名称
+    """
+    description = DescriptionField()  # 描述
+    creator = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='creator_query', null=True,
+                                verbose_name='创建者', on_delete=SET_NULL, db_constraint=False)  # 创建者
+    modifier = ModifierCharField()  # 修改者
+    dept_belong_id = models.CharField(max_length=64, verbose_name="数据归属部门", null=True, blank=True)
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    class Meta:
+        abstract = True
+        verbose_name = '核心模型'
+        verbose_name_plural = verbose_name
+
+
+class ToDictModelMixin:
     def to_dict(self, fields=None, exclude=None, convert_choice=False, fields_map=None):
         """
         Return a dict containing the data in ``instance`` suitable for passing as
@@ -58,6 +122,3 @@ class ToDictModel(models.Model):
             field_name = fields_map.get(f.name, f.name)
             data[field_name] = [i.id for i in f.value_from_object(self)]
         return data
-
-    class Meta:
-        abstract = True
