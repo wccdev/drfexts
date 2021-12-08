@@ -3,9 +3,9 @@ drfexts
 
 [![GitHub license](https://img.shields.io/github/license/aiden520/drfexts)](https://github.com/aiden520/drfexts/blob/master/LICENSE)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/drfexts)
-[![PyPI - Django Version](https://img.shields.io/badge/django-%3E%3D3.0-0C4B33)](https://www.djangoproject.com/)
-[![PyPI - DRF Version](https://img.shields.io/badge/djangorestframework-%3E%3D3.0-A30000)](https://www.django-rest-framework.org)
 [![pypi-version](https://img.shields.io/pypi/v/drfexts.svg)](https://pypi.python.org/pypi/drfexts)
+[![PyPI - Django Version](https://img.shields.io/badge/django-%3E%3D3.0-44B78B)](https://www.djangoproject.com/)
+[![PyPI - DRF Version](https://img.shields.io/badge/djangorestframework-%3E%3D3.0-red)](https://www.django-rest-framework.org)
 [![GitHub stars](https://img.shields.io/github/stars/aiden520/drfexts)](https://github.com/aiden520/drfexts/stargazers)
 [![Build Status](https://app.travis-ci.com/aiden520/drfexts.svg?branch=master)](https://app.travis-ci.com/aiden520/drfexts)
 
