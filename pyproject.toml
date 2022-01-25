@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "drfexts"
-version = "0.1.1"
+version = "0.1.12"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -19,16 +19,18 @@ include = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-django = "^3.0"
-django-storages = "^1.12.3"
-django-filter = "^21.1"
-djangorestframework = "^3.12.4"
+django = ">=3.0"
+django-storages = ">=.12.3"
+django-filter = ">=21.1"
+djangorestframework = ">=3.12.4"
 pip = "^21.3.1"
 djangorestframework-csv = "^2.1.1"
 openpyxl = "^3.0.9"
+pydantic = "^1.8.2"
+ujson = "^5.1.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^3.0"
+#pytest = "^4.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
