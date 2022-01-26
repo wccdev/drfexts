@@ -5,6 +5,7 @@ some fairly ad-hoc information about the view.
 Future implementations might use JSON schema or other definitions in order
 to return this information in a more standardized way.
 """
+from rest_framework.fields import ChoiceField, MultipleChoiceField
 from rest_framework.metadata import BaseMetadata
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
@@ -13,8 +14,8 @@ from django.utils.encoding import force_str
 from rest_framework import exceptions, serializers
 from rest_framework.request import clone_request
 from rest_framework.utils.field_mapping import ClassLookupDict
-from .style import DisplayStyle
-
+from .style import Style
+from .utils import to_table_choices
 
 SIMPLE = 'simple'
 COMPLEX = 'subtable'
@@ -35,7 +36,7 @@ class TableMeta(dict):
         super().__init__(_, **kwargs)
 
 
-class DynamicTableMetadata(BaseMetadata):
+class VueTableMetadata(BaseMetadata):
     """
     This is the default metadata implementation.
     It returns an ad-hoc set of information about the view.
@@ -43,7 +44,7 @@ class DynamicTableMetadata(BaseMetadata):
     for us to base this on.
     """
 
-    style_class = DisplayStyle
+    style_class = Style
     label_lookup = ClassLookupDict(
         {
             serializers.Field: 'field',
@@ -174,7 +175,6 @@ class DynamicTableMetadata(BaseMetadata):
             self.get_field_style(field)
             for field_name, field in serializer.fields.items()
             if not isinstance(field, serializers.HiddenField) and not field.write_only
-            and field.style.get("column_visible", True)
         ]
 
     def get_field_style(self, field, sub_table=True):
@@ -182,15 +182,19 @@ class DynamicTableMetadata(BaseMetadata):
         Given an instance of a serializer field, return a dictionary
         of metadata about it.
         """
-        style = copy.deepcopy(field.style)
-        if not isinstance(style, self.style_class):
-            style = self.style_class()
+        # validate style
+        if isinstance(field.style, dict):
+            copy_style = copy.deepcopy(field.style)
+            style = self.style_class(**copy_style)
+        elif isinstance(field.style, self.style_class):
+            style = field.style
+        else:
+            raise ValueError("Unsupported style type.")
 
-        for attr in style.__slots__:
-            func_name = f'set_{attr}'
-            if hasattr(style, func_name):
-                func = getattr(style, func_name)
-                if callable(func):
-                    func(self, field)
+        style.field = field.field_name
+        style.title = field.label
 
-        return style
+        if isinstance(field, (ChoiceField, MultipleChoiceField)) and field.choices:
+            style.cellRender = to_table_choices(field.choices)
+
+        return style.dict(exclude_none=True)

@@ -1,7 +1,9 @@
 import logging
 import os
 import random
+from collections import OrderedDict
 from datetime import datetime
+from typing import Tuple
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.transaction import atomic
@@ -56,3 +58,10 @@ def get_serial_code(prefix=""):
     """
     random_number = random.randint(0, 999)
     return timezone.now().strftime(f"{prefix}%y%m%d%H%M%I{random_number:03d}")
+
+
+def to_table_choices(choices: OrderedDict):
+    """
+    转换为前端适配的options
+    """
+    return [{"label": label, "value": value} for value, label in choices.items()]

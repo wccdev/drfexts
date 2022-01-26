@@ -1,6 +1,7 @@
 import datetime
+from typing import Mapping, Optional, Union, Any
 
-import openpyxl
+import ujson
 import unicodecsv as csv
 from io import BytesIO
 
@@ -8,44 +9,80 @@ from django.conf import settings
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from rest_framework import status
-from rest_framework.renderers import JSONRenderer, BaseRenderer
+from rest_framework.renderers import BaseRenderer, JSONRenderer
 from rest_framework.status import is_success
-from rest_framework.response import Response
-from rest_framework_csv.renderers import CSVRenderer
 
 
 class CustomJSONRenderer(JSONRenderer):
-    def render(self, data, accepted_media_type=None, renderer_context=None):
+    """
+    Renderer which serializes to JSON.
+    Applies JSON's backslash-u character escaping for non-ascii characters.
+    Uses the blazing-fast ujson library for serialization.
+    """
+
+    # Controls whether forward slashes (/) are escaped.
+    escape_forward_slashes: bool = False
+    # Used to enable special encoding of "unsafe" HTML characters into safer
+    # Unicode sequences.
+    encode_html_chars: bool = False
+
+    def render(
+        self,
+        data: Union[dict, None],
+        accepted_media_type: Optional[str] = None,
+        renderer_context: Mapping[str, Any] = None,
+    ) -> bytes:
+
+        accepted_media_type = accepted_media_type or ""
+        renderer_context = renderer_context or {}
+        indent = self.get_indent(accepted_media_type, renderer_context)
         response = renderer_context['response']
         status_code = getattr(response, 'error_code', response.status_code)
         response.status_code = status.HTTP_200_OK
         playload = {
             "ret": status_code,
             "msg": "success",
-            "data": data,
         }
 
+        if data is not None:
+            playload["data"] = data
+
         if not is_success(status_code):
-            playload["data"] = None
             try:
                 playload["msg"] = data["detail"]
+                playload.pop("data", None)
             except Exception:
-                playload["msg"] = "failed"
-                playload["data"] = data
+                playload["msg"] = "error"
         else:
             playload["ret"] = status.HTTP_200_OK
 
-        return super(CustomJSONRenderer, self).render(playload, accepted_media_type, renderer_context)
+        ret = ujson.dumps(
+            playload,
+            ensure_ascii=self.ensure_ascii,
+            escape_forward_slashes=self.escape_forward_slashes,
+            encode_html_chars=self.encode_html_chars,
+            indent=indent or 0,
+        )
+
+        # force return value to unicode
+        if isinstance(ret, str):
+            # We always fully escape \u2028 and \u2029 to ensure we output JSON
+            # that is a strict javascript subset. If bytes were returned
+            # by json.dumps() then we don't have these characters in any case.
+            # See: http://timelessrepo.com/json-isnt-a-javascript-subset
+            ret = ret.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
+            return bytes(ret.encode("utf-8"))
+        return ret
 
 
 class BaseExportRenderer(BaseRenderer):
-    def validate(self, data):
+    def validate(self, data: dict):
         return True
 
-    def get_export_data(self, data):
+    def get_export_data(self, data: dict):
         return data["results"] if "results" in data else data
 
-    def get_file_name(self, renderer_context):
+    def get_file_name(self, renderer_context: Optional[dict]):
         return f'export({datetime.datetime.now().strftime("%Y%m%d")})'
 
     def tablize(self, data, header=None, labels=None, value_mapping=None):
@@ -126,6 +163,7 @@ class CustomCSVRenderer(BaseExportRenderer):
     header = None
     labels = None  # {'<field>':'<label>'}
     writer_opts = None
+    data_key = "results"
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """
@@ -133,10 +171,10 @@ class CustomCSVRenderer(BaseExportRenderer):
         """
         renderer_context = renderer_context or {}
         if data is None:
-            return ''
+            return bytes()
 
-        if not isinstance(data, list):
-            data = [data]
+        if isinstance(data, dict):
+            data = data[self.data_key]
 
         writer_opts = renderer_context.get('writer_opts', self.writer_opts or {})
         header = renderer_context.get('header', self.header)
@@ -167,6 +205,11 @@ class CustomExcelRenderer(BaseExportRenderer):
     boolean_labels = None
     custom_mappings = None
     letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    data_key = "results"
+    header_font = Font(b=True)
+    header_fill = PatternFill('solid', start_color="87CEFA")
+    header_height = 17
+    freeze_header = True
 
     def excel_style(self, row, col):
         """ Convert given row and column number to an Excel-style cell name. """
@@ -183,7 +226,8 @@ class CustomExcelRenderer(BaseExportRenderer):
         if not self.validate(data):
             return bytes()
 
-        data = data["data"]["list"]
+        if isinstance(data, dict):
+            data = data[self.data_key]
 
         header = renderer_context.get('header', self.header)
         labels = renderer_context.get('labels', self.labels)
@@ -198,16 +242,14 @@ class CustomExcelRenderer(BaseExportRenderer):
         for row in table:
             sheet.append(row)
 
-        font = Font(b=True)
-        fill = PatternFill(bgColor="FFC7CE", fill_type="solid")
-
         for cell in sheet["1:1"]:
-            cell.font = font
-            cell.fill = PatternFill('solid', start_color="87CEFA")
+            cell.font = self.header_font
+            cell.fill = self.header_fill
             cell.alignment = Alignment(vertical='center')
 
-        sheet.row_dimensions[1].height = 17
-        sheet.freeze_panes = f"A2"
+        sheet.row_dimensions[1].height = self.header_height
+        if self.freeze_header:
+            sheet.freeze_panes = f"A2"
 
         sheet.print_title_rows = '1:1'
         workbook.save(excel_buffer)

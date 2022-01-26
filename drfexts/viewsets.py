@@ -1,6 +1,7 @@
 from django.db.models import QuerySet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
+from rest_framework.relations import ManyRelatedField, RelatedField
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.fields import ReadOnlyField
@@ -14,7 +15,7 @@ from drfexts.filtersets.backends import (
     DynamicFilterBackend,
     OrderingByFieldNameFilterMixin,
 )
-from drfexts.metadata import DynamicTableMetadata
+from drfexts.metadata import VueTableMetadata
 from drfexts.renderers import CustomExcelRenderer, CustomCSVRenderer
 
 
@@ -107,7 +108,7 @@ class DynamicListModelMixin:
     """
     Auto creating serializer-based filter.
     """
-    metadata_class = DynamicTableMetadata
+    metadata_class = VueTableMetadata
     renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
     filter_backends = api_settings.DEFAULT_FILTER_BACKENDS + []
 
@@ -232,7 +233,7 @@ class ExportMixin:
                 continue
 
             columns[field_name] = {"column_name": str(field.label)}
-            if hasattr(field, "choices"):
+            if not isinstance(field, (ManyRelatedField, RelatedField)) and getattr(field, "choices", None):
                 columns[field_name]["choices"] = dict(field.choices)
         return columns
 
