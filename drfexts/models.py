@@ -1,19 +1,29 @@
 from itertools import chain
 
-from django.conf import settings
 from django.db import models
-from django.db.models import Func, SET_NULL
+from django.db.models import Func, fields
 
-from .fields import AutoUUIDField, DescriptionField, UpdatedAtField, CreatedAtField, ModifierCharField
+from .constants import CommonStatus
+from .fields import (
+    AutoUUIDField,
+    DescriptionField,
+    UpdatedAtField,
+    CreatedAtField,
+    ModifierCharField,
+    CreatorCharField,
+    StatusField,
+)
 
 
 class IsNull(Func):
     template = '%(expressions)s IS NULL'
+    output_field = fields.BooleanField()
     arity = 1
 
 
 class NotNull(Func):
     template = '%(expressions)s IS NOT NULL'
+    output_field = fields.BooleanField()
     arity = 1
 
 
@@ -23,6 +33,7 @@ class VirtualForeignKey(models.ForeignKey):
     """
 
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault("on_delete", models.CASCADE)
         kwargs.setdefault("db_constraint", False)
         super().__init__(*args, **kwargs)
 
@@ -41,9 +52,13 @@ class BaseModel(models.Model):
     """
     标准抽象模型模型,可直接继承使用
     """
+
     description = DescriptionField()  # 描述
+    status = models.SmallIntegerField(choices=CommonStatus.choices, default=CommonStatus.TO_VALID)
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
+
+    objects = models.Manager()
 
     class Meta:
         abstract = True
@@ -55,6 +70,7 @@ class UUIDModel(BaseModel):
     """
     标准抽象模型模型,可直接继承使用
     """
+
     id = AutoUUIDField()
     description = DescriptionField()  # 描述
     updated_at = UpdatedAtField()  # 修改时间
@@ -71,11 +87,11 @@ class CoreModel(models.Model):
     核心标准抽象模型模型,可直接继承使用
     增加审计字段, 覆盖字段时, 字段名称请勿修改, 必须统一审计字段名称
     """
+
     description = DescriptionField()  # 描述
-    creator = models.ForeignKey(to=settings.AUTH_USER_MODEL, related_query_name='creator_query', null=True,
-                                verbose_name='创建者', on_delete=SET_NULL, db_constraint=False)  # 创建者
+    status = StatusField()  # 状态
+    creator = CreatorCharField()  # 创建者
     modifier = ModifierCharField()  # 修改者
-    dept_belong_id = models.CharField(max_length=64, verbose_name="数据归属部门", null=True, blank=True)
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 

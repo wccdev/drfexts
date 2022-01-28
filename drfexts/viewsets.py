@@ -1,6 +1,4 @@
 from django.db.models import QuerySet
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.decorators import action
 from rest_framework.relations import ManyRelatedField, RelatedField
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, Serializer
@@ -8,13 +6,6 @@ from rest_framework.fields import ReadOnlyField
 from django.core.exceptions import ImproperlyConfigured
 from rest_framework.settings import api_settings
 from rest_framework.viewsets import GenericViewSet
-
-from drfexts.filtersets.backends import (
-    AutoFilterBackendMixin,
-    DjangoFilterBackendListFixMixin,
-    DynamicFilterBackend,
-    OrderingByFieldNameFilterMixin,
-)
 from drfexts.metadata import VueTableMetadata
 from drfexts.renderers import CustomExcelRenderer, CustomCSVRenderer
 
@@ -27,7 +18,7 @@ class EagerLoadingMixin:
         Call setup_eager_loading function on serializer
         """
         queryset = super().get_queryset(*args, **kwargs)
-        serilaizer_class = self.get_serializer_class()
+        serilaizer_class = self.get_serializer_class()  # noqa
         if hasattr(serilaizer_class, "setup_eager_loading") and callable(serilaizer_class.setup_eager_loading):
             queryset = serilaizer_class.setup_eager_loading(queryset)
             assert isinstance(queryset, QuerySet), (
@@ -55,7 +46,7 @@ class SelectOnlyMixin:
         Select only fields
         """
         queryset = super().get_queryset()
-        serilaizer_class = self.get_serializer_class()
+        serilaizer_class = self.get_serializer_class()  # noqa
 
         assert issubclass(
             serilaizer_class, ModelSerializer
@@ -109,8 +100,7 @@ class DynamicListModelMixin:
     Auto creating serializer-based filter.
     """
     metadata_class = VueTableMetadata
-    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
-    filter_backends = api_settings.DEFAULT_FILTER_BACKENDS + []
+    filter_backends = api_settings.DEFAULT_FILTER_BACKENDS
 
     def options(self, request, *args, **kwargs):
         """
@@ -122,25 +112,6 @@ class DynamicListModelMixin:
 
         data = metadata_class().determine_metadata(request, self)
         return Response(data)
-
-    def filter_queryset(self, queryset):
-        """
-        Auto filter queryset with `DynamicFilterBackend`.
-        """
-        filter_backend_provided = False
-        for backend in list(self.filter_backends):
-            if isinstance(backend, DjangoFilterBackend):
-                filter_backend_provided = True
-                backend = type(
-                    "DynamicFilterBackend",
-                    (DjangoFilterBackendListFixMixin, OrderingByFieldNameFilterMixin, AutoFilterBackendMixin, backend),
-                )
-            queryset = backend().filter_queryset(self.request, queryset, self)
-
-        if not filter_backend_provided:
-            queryset = DynamicFilterBackend().filter_queryset(self.request, queryset, self)
-
-        return queryset
 
 
 class ExtGenericViewSet(GenericViewSet):
@@ -224,7 +195,7 @@ class ExportMixin:
         获取导出列信息
         :return:
         """
-        serializer = self.get_serializer()
+        serializer = self.get_serializer()  # noqa
         fields = serializer._readable_fields
         columns = {}
         for field in fields:
@@ -238,11 +209,11 @@ class ExportMixin:
         return columns
 
     def get_renderer_context(self):
-        context = super().get_renderer_context()
+        context = super().get_renderer_context()  # noqa
         export_columns = self.get_export_columns()
         context['header'] = (
-            self.request.GET['fields'].split(',')
-            if 'fields' in self.request.GET else export_columns.keys())
+            self.request.GET['fields'].split(',')  # noqa
+            if 'fields' in self.request.GET else export_columns.keys())  # noqa
         context['labels'] = {
             field_name: attrs["column_name"] for field_name, attrs in export_columns.items()
         }

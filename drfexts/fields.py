@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import SET_NULL
 
+from .constants import CommonStatus
 from .utils import get_serial_code
 
 
@@ -72,7 +73,7 @@ class UpdatedAtField(models.DateTimeField):
     def __init__(self, verbose_name=None, name=None, auto_now=True, auto_now_add=False, **kwargs):
         verbose_name = verbose_name or '修改时间'
         kwargs['editable'] = kwargs.get('default', False)
-        kwargs.setdefault('help_text', '修改时间')
+        kwargs.setdefault('help_text', '该记录的最后修改时间')
         kwargs.setdefault('blank', True)
         kwargs.setdefault('null', True)
         super().__init__(verbose_name, name, auto_now, auto_now_add, **kwargs)
@@ -86,7 +87,7 @@ class CreatedAtField(models.DateTimeField):
     def __init__(self, verbose_name=None, name=None, auto_now=False, auto_now_add=True, **kwargs):
         verbose_name = verbose_name or '创建时间'
         kwargs['editable'] = kwargs.get('default', False)
-        kwargs.setdefault('help_text', '创建时间')
+        kwargs.setdefault('help_text', '该记录的创建时间')
         kwargs.setdefault('blank', True)
         kwargs.setdefault('null', True)
         super().__init__(verbose_name, name, auto_now, auto_now_add, **kwargs)
@@ -119,3 +120,15 @@ class ModifierCharField(models.CharField):
         kwargs.setdefault('help_text', '该记录最后修改者')
         super().__init__(*args, **kwargs)
 
+
+class StatusField(models.PositiveSmallIntegerField):
+    """
+    status = StatusField()
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('verbose_name', '状态')
+        kwargs.setdefault('choices', CommonStatus.choices)
+        kwargs.setdefault('default', CommonStatus.TO_VALID)
+        kwargs.setdefault('help_text', '该记录的状态')
+        super().__init__(*args, **kwargs)
