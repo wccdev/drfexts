@@ -54,7 +54,7 @@ class BaseModel(models.Model):
     """
 
     description = DescriptionField()  # 描述
-    status = models.SmallIntegerField(choices=CommonStatus.choices, default=CommonStatus.TO_VALID)
+    status = models.PositiveSmallIntegerField(choices=CommonStatus.choices, default=CommonStatus.TO_VALID)  # 状态
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
@@ -82,10 +82,10 @@ class UUIDModel(BaseModel):
         verbose_name_plural = verbose_name
 
 
-class CoreModel(models.Model):
+class AuditModel(models.Model):
     """
-    核心标准抽象模型模型,可直接继承使用
-    增加审计字段, 覆盖字段时, 字段名称请勿修改, 必须统一审计字段名称
+    审计抽象模型模型,可直接继承使用
+    覆盖字段时, 字段名称请勿修改, 必须统一审计字段名称
     """
 
     description = DescriptionField()  # 描述
@@ -97,11 +97,11 @@ class CoreModel(models.Model):
 
     class Meta:
         abstract = True
-        verbose_name = '核心模型'
+        verbose_name = '审计模型'
         verbose_name_plural = verbose_name
 
 
-class ToDictModelMixin:
+class ToDictModelMixin:  # noqa
     def to_dict(self, fields=None, exclude=None, convert_choice=False, fields_map=None):
         """
         Return a dict containing the data in ``instance`` suitable for passing as
@@ -118,7 +118,7 @@ class ToDictModelMixin:
 
         ``field_map`` is dict object, If provided, perform field name mapping.
         """
-        opts = self._meta
+        opts = self._meta  # noqa
         fields_map = fields_map or {}
         data = {}
         assert not all([fields, exclude]), "Cannot set both 'fields' and 'exclude' options."

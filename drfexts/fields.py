@@ -3,7 +3,7 @@ from functools import partial
 
 from django.conf import settings
 from django.db import models
-from django.db.models import SET_NULL
+from django.db.models import SET_NULL, CASCADE
 
 from .constants import CommonStatus
 from .utils import get_serial_code
@@ -57,7 +57,7 @@ class UserForeignKeyField(models.ForeignKey):
 
     def __init__(self, to=None, on_delete=None, **kwargs):
         to = to or settings.AUTH_USER_MODEL
-        on_delete = on_delete or SET_NULL
+        on_delete = on_delete or CASCADE
         kwargs.setdefault("to_field", "id")
         kwargs.setdefault("db_constraint", False)
         kwargs.setdefault('verbose_name', '关联的用户')
