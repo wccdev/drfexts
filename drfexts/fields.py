@@ -1,38 +1,136 @@
 import uuid
+import warnings
 from functools import partial
-
+from django.contrib.postgres.fields import ArrayField as PGArrayField
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import SET_NULL, CASCADE
+from django.db.models import CASCADE
 
-from .constants import CommonStatus
+from .constants import CommonStatus, AuditStatus
 from .utils import get_serial_code
+
+User = get_user_model()
+
+
+class DefaultHelpTextMixin:
+    def __init__(self, verbose_name, *args, **kwargs):
+        kwargs.setdefault('help_text', verbose_name)
+        super().__init__(verbose_name, *args, **kwargs)
+
+
+class NullHelpTextMixin:
+    def __init__(self, verbose_name, *args, **kwargs):
+        kwargs['null'] = False
+        kwargs.setdefault('help_text', verbose_name)
+        super().__init__(verbose_name, *args, **kwargs)
+
+
+class AutoField(models.AutoField):
+    def __init__(self, verbose_name="主键", **kwargs):
+        kwargs.setdefault('help_text', verbose_name)
+        super().__init__(verbose_name, **kwargs)
+
+
+class BigAutoField(DefaultHelpTextMixin, models.BigAutoField):
+    pass
+
+
+class CharField(NullHelpTextMixin, models.CharField):
+    pass
+
+
+class TextField(NullHelpTextMixin, models.TextField):
+    pass
+
+
+class IntegerField(DefaultHelpTextMixin, models.IntegerField):
+    pass
+
+
+class BigIntegerField(DefaultHelpTextMixin, models.BigIntegerField):
+    pass
+
+
+class SmallIntegerField(DefaultHelpTextMixin, models.SmallIntegerField):
+    pass
+
+
+class PositiveSmallIntegerField(DefaultHelpTextMixin, models.PositiveSmallIntegerField):
+    pass
+
+
+class BooleanField(DefaultHelpTextMixin, models.BooleanField):
+    pass
+
+
+class FileField(DefaultHelpTextMixin, models.FileField):
+    pass
+
+
+class ImageField(DefaultHelpTextMixin, models.ImageField):
+    pass
+
+
+class FloatField(DefaultHelpTextMixin, models.FloatField):
+    pass
+
+
+class DecimalField(DefaultHelpTextMixin, models.DecimalField):
+    pass
+
+
+class DateTimeField(DefaultHelpTextMixin, models.DateTimeField):
+    pass
+
+
+class DateField(DefaultHelpTextMixin, models.DateField):
+    pass
+
+
+class EmailField(DefaultHelpTextMixin, models.EmailField):
+    pass
+
+
+class URLField(DefaultHelpTextMixin, models.URLField):
+    pass
+
+
+class UUIDField(DefaultHelpTextMixin, models.UUIDField):
+    pass
+
+
+class JSONField(DefaultHelpTextMixin, models.JSONField):
+    pass
+
+
+class ArrayField(DefaultHelpTextMixin, PGArrayField):
+    pass
 
 
 class AutoUUIDField(models.UUIDField):
-
-    def __init__(self, **kwargs):
+    def __init__(self, verbose_name="主键", **kwargs):
         kwargs['blank'] = True
         kwargs["default"] = uuid.uuid4
+        kwargs.setdefault('help_text', verbose_name)
         kwargs.setdefault("primary_key", True)
-        kwargs.setdefault("verbose_name", "主键")
-        super().__init__(**kwargs)
+        super().__init__(verbose_name, **kwargs)
 
 
 class DefaultCodeField(models.CharField):
     """
     自动编号字段
     """
+
     DEFAULT_LENGTH = 15
 
-    def __init__(self, prefix="", **kwargs):
+    def __init__(self, verbose_name="编号", prefix="", **kwargs):
         kwargs['blank'] = True
         kwargs["default"] = partial(get_serial_code, prefix)
         kwargs["max_length"] = self.DEFAULT_LENGTH + len(prefix)
         kwargs['editable'] = False
-        kwargs.setdefault("verbose_name", "编号")
-        kwargs.setdefault("help_text", kwargs["verbose_name"])
-        super().__init__(**kwargs)
+        kwargs.setdefault("help_text", verbose_name)
+        super().__init__(verbose_name, **kwargs)
 
 
 class DescriptionField(models.TextField):
@@ -40,14 +138,10 @@ class DescriptionField(models.TextField):
     description = DescriptionField()
     """
 
-    def __init__(self, *args, **kwargs):
-        if kwargs.get('null', True):
-            kwargs['default'] = kwargs.get('default', '')
+    def __init__(self, verbose_name="描述", **kwargs):
         kwargs.setdefault('blank', True)
-        kwargs.setdefault('null', True)
-        kwargs.setdefault('verbose_name', '描述')
-        kwargs.setdefault('help_text', kwargs['verbose_name'])
-        super().__init__(*args, **kwargs)
+        kwargs.setdefault('help_text', verbose_name)
+        super().__init__(verbose_name, **kwargs)
 
 
 class UserForeignKeyField(models.ForeignKey):
@@ -55,14 +149,12 @@ class UserForeignKeyField(models.ForeignKey):
     user = UserForeignKeyField()
     """
 
-    def __init__(self, to=None, on_delete=None, **kwargs):
-        to = to or settings.AUTH_USER_MODEL
+    def __init__(self, verbose_name="关联的用户", to=None, on_delete=None, **kwargs):
+        to = to or User
         on_delete = on_delete or CASCADE
-        kwargs.setdefault("to_field", "id")
         kwargs.setdefault("db_constraint", False)
-        kwargs.setdefault('verbose_name', '关联的用户')
-        kwargs.setdefault('help_text', kwargs['verbose_name'])
-        super().__init__(to=to, on_delete=on_delete, **kwargs)
+        kwargs.setdefault('help_text', verbose_name)
+        super().__init__(to=to, verbose_name=verbose_name, on_delete=on_delete, **kwargs)
 
 
 class UpdatedAtField(models.DateTimeField):
@@ -70,13 +162,12 @@ class UpdatedAtField(models.DateTimeField):
     update_datetime = ModifyDateTimeField()
     """
 
-    def __init__(self, verbose_name=None, name=None, auto_now=True, auto_now_add=False, **kwargs):
-        verbose_name = verbose_name or '修改时间'
-        kwargs['editable'] = kwargs.get('default', False)
+    def __init__(self, verbose_name="修改时间", **kwargs):
+        kwargs['editable'] = False
+        kwargs['auto_now'] = True
         kwargs.setdefault('help_text', '该记录的最后修改时间')
         kwargs.setdefault('blank', True)
-        kwargs.setdefault('null', True)
-        super().__init__(verbose_name, name, auto_now, auto_now_add, **kwargs)
+        super().__init__(verbose_name, **kwargs)
 
 
 class CreatedAtField(models.DateTimeField):
@@ -84,13 +175,26 @@ class CreatedAtField(models.DateTimeField):
     create_datetime = CreateDateTimeField()
     """
 
-    def __init__(self, verbose_name=None, name=None, auto_now=False, auto_now_add=True, **kwargs):
-        verbose_name = verbose_name or '创建时间'
-        kwargs['editable'] = kwargs.get('default', False)
+    def __init__(self, verbose_name="创建时间", **kwargs):
+        kwargs['editable'] = False
+        kwargs['auto_now_add'] = True
         kwargs.setdefault('help_text', '该记录的创建时间')
         kwargs.setdefault('blank', True)
+        super().__init__(verbose_name, **kwargs)
+
+
+class CreatorField(models.ForeignKey):
+    """
+    creator = CreatorField()
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('max_length', 128)
         kwargs.setdefault('null', True)
-        super().__init__(verbose_name, name, auto_now, auto_now_add, **kwargs)
+        kwargs.setdefault('blank', True)
+        kwargs.setdefault('verbose_name', '创建者')
+        kwargs.setdefault('help_text', '该记录的创建者')
+        super().__init__(*args, **kwargs)
 
 
 class CreatorCharField(models.CharField):
@@ -126,9 +230,53 @@ class StatusField(models.PositiveSmallIntegerField):
     status = StatusField()
     """
 
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('verbose_name', '状态')
+    def __init__(self, verbose_name="状态", **kwargs):
         kwargs.setdefault('choices', CommonStatus.choices)
-        kwargs.setdefault('default', CommonStatus.TO_VALID)
+        kwargs.setdefault('default', CommonStatus.VALID)
         kwargs.setdefault('help_text', '该记录的状态')
-        super().__init__(*args, **kwargs)
+        super().__init__(verbose_name, **kwargs)
+
+
+class AuditStatusField(models.PositiveSmallIntegerField):
+    """
+    status = StatusField()
+    """
+
+    def __init__(self, verbose_name="审核状态", **kwargs):
+        kwargs.setdefault('choices', AuditStatus.choices)
+        kwargs.setdefault('null', True)
+        kwargs.setdefault('blank', True)
+        kwargs.setdefault('help_text', '该记录的审核状态')
+        super().__init__(verbose_name, **kwargs)
+
+
+class VirtualForeignKey(models.ForeignKey):
+    def __init__(self, verbose_name, to, *args, **kwargs):
+        kwargs.setdefault("verbose_name", verbose_name)
+        kwargs.setdefault("on_delete", models.CASCADE)
+        kwargs.setdefault("db_constraint", False)
+
+        if "related_name" not in kwargs:
+            warnings.warn("建议设置related_name！")
+
+        super().__init__(to, *args, **kwargs)
+
+
+class OneToOneField(models.OneToOneField):
+    def __init__(self, verbose_name, to, *args, **kwargs):
+        kwargs.setdefault("verbose_name", verbose_name)
+        kwargs.setdefault("on_delete", models.CASCADE)
+        kwargs.setdefault("db_constraint", False)
+        super().__init__(to, *args, **kwargs)
+
+
+class VirtualManyToMany(models.ManyToManyField):
+    def __init__(self, verbose_name, to, *args, **kwargs):
+        kwargs.setdefault("verbose_name", verbose_name)
+        if "through" not in kwargs:
+            kwargs["db_constraint"] = False
+
+        if "related_name" not in kwargs:
+            warnings.warn("建议设置related_name！")
+
+        super().__init__(to, *args, **kwargs)

@@ -2,17 +2,20 @@ from itertools import chain
 
 from django.db import models
 from django.db.models import Func, fields
-
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from .constants import CommonStatus
 from .fields import (
     AutoUUIDField,
-    DescriptionField,
     UpdatedAtField,
     CreatedAtField,
-    ModifierCharField,
-    CreatorCharField,
     StatusField,
+    DefaultCodeField,
+    AuditStatusField,
+    VirtualForeignKey,
 )
+
+User = get_user_model()
 
 
 class IsNull(Func):
@@ -27,33 +30,11 @@ class NotNull(Func):
     arity = 1
 
 
-class VirtualForeignKey(models.ForeignKey):
-    """
-    Virtual foreignkey which won't create concret relationship on database level.
-    """
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("on_delete", models.CASCADE)
-        kwargs.setdefault("db_constraint", False)
-        super().__init__(*args, **kwargs)
-
-
-class VirtualManyToMany(models.ManyToManyField):
-    """
-    Virtual foreignkey which won't create concret relationship on database level.
-    """
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("db_constraint", False)
-        super().__init__(*args, **kwargs)
-
-
 class BaseModel(models.Model):
     """
     标准抽象模型模型,可直接继承使用
     """
 
-    description = DescriptionField()  # 描述
     status = models.PositiveSmallIntegerField(choices=CommonStatus.choices, default=CommonStatus.TO_VALID)  # 状态
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
@@ -63,7 +44,39 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
         verbose_name = '基本模型'
-        verbose_name_plural = verbose_name
+
+
+class BaseCodeModel(models.Model):
+    """
+    标准抽象模型模型(增加code),可直接继承使用
+    """
+
+    code = DefaultCodeField()  # 编号
+    status = models.PositiveSmallIntegerField(choices=CommonStatus.choices, default=CommonStatus.TO_VALID)  # 状态
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    objects = models.Manager()
+
+    class Meta:
+        abstract = True
+        verbose_name = '基本模型(code)'
+
+
+class BaseCreatorModel(models.Model):
+    """
+    审计抽象模型模型,可直接继承使用
+    覆盖字段时, 字段名称请勿修改, 必须统一审计字段名称
+    """
+
+    status = StatusField()  # 状态
+    created_by = VirtualForeignKey("创建人", User, db_column="created_by", related_name='%(class)s_created_by')  # 创建者
+    updated_by = VirtualForeignKey("修改人", User, db_column="updated_by", related_name='%(class)s_updated_by')  # 修改者
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    class Meta:
+        abstract = True
 
 
 class UUIDModel(BaseModel):
@@ -72,14 +85,12 @@ class UUIDModel(BaseModel):
     """
 
     id = AutoUUIDField()
-    description = DescriptionField()  # 描述
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
     class Meta:
         abstract = True
         verbose_name = 'UUID模型'
-        verbose_name_plural = verbose_name
 
 
 class AuditModel(models.Model):
@@ -88,17 +99,16 @@ class AuditModel(models.Model):
     覆盖字段时, 字段名称请勿修改, 必须统一审计字段名称
     """
 
-    description = DescriptionField()  # 描述
     status = StatusField()  # 状态
-    creator = CreatorCharField()  # 创建者
-    modifier = ModifierCharField()  # 修改者
+    audit_status = AuditStatusField()  # 审核状态
+    created_by = VirtualForeignKey("创建人", User, db_column="created_by", related_name='%(class)s_created_by')  # 创建者
+    updated_by = VirtualForeignKey("修改人", User, db_column="updated_by", related_name='%(class)s_updated_by')  # 修改者
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
     class Meta:
         abstract = True
-        verbose_name = '审计模型'
-        verbose_name_plural = verbose_name
+        verbose_name = '审核模型'
 
 
 class ToDictModelMixin:  # noqa
