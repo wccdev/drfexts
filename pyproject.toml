@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "drfexts"
-version = "0.1.12"
+version = "0.5.13"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -12,22 +12,17 @@ include = [
     "LICENSE",
 ]
 
-#[[tool.poetry.source]]
-#name = "wcc-pypi"
-#url = "https://pypi.wochacha.cn/simple/"
-#default = true
-
 [tool.poetry.dependencies]
-python = "^3.7"
-django = ">=3.0"
+python = "^3.8"
+django = "^3.2"
 django-storages = ">=.12.3"
 django-filter = ">=21.1"
 djangorestframework = ">=3.12.4"
-pip = "^21.3.1"
+pip = ">=21.3.1"
 djangorestframework-csv = "^2.1.1"
 openpyxl = "^3.0.9"
 pydantic = "^1.8.2"
-ujson = "^5.1.0"
+ujson = ">=5.1.0"
 
 [tool.poetry.dev-dependencies]
 #pytest = "^4.0"

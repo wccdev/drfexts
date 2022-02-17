@@ -17,15 +17,15 @@ class MultiSearchMixin:
         if value in EMPTY_VALUES or not value:
             return qs
 
-        if self.distinct:
+        if self.distinct:  # noqa
             qs = qs.distinct()
 
         if self.search_fields:
-            queries = (Q(**{'%s__%s' % (search_field, self.lookup_expr): value}) for search_field in self.search_fields)
+            queries = (Q(**{'%s__%s' % (search_field, self.lookup_expr): value}) for search_field in self.search_fields)  # noqa
             conditions = reduce(operator.or_, queries)
             qs = qs.filter(conditions)
         else:
-            lookup = '%s__%s' % (self.field_name, self.lookup_expr)
+            lookup = '%s__%s' % (self.field_name, self.lookup_expr)  # noqa
             qs = self.filter(**{lookup: value})
 
         return qs
@@ -74,4 +74,3 @@ class MultipleValueField(MultipleChoiceField):
 
     def clean(self, values):
         return values and [self.inner_field.clean(value) for value in values]
-

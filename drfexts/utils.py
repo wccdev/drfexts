@@ -3,7 +3,6 @@ import os
 import random
 from collections import OrderedDict
 from datetime import datetime
-from typing import Tuple
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.transaction import atomic

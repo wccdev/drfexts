@@ -6,20 +6,22 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django_filters.filters import (
     BooleanFilter,
     CharFilter,
-    NumberFilter,
     TimeFilter,
     UUIDFilter,
-    DateFromToRangeFilter,
 )
 from django_filters.utils import get_model_field
 from rest_framework import serializers
 from rest_framework.utils.field_mapping import ClassLookupDict
-
-from .filters import IsNullFilter, IsNotNullFilter, CustomModelMultipleChoiceFilter, \
-    CustomMultipleChoiceFilter, CustomRangeFilter, MultipleSelectFilter
+from rest_framework.filters import OrderingFilter
+from .filters import (
+    IsNullFilter,
+    IsNotNullFilter,
+    ExtendedMultipleChoiceFilter,
+    ExtendedNumberFilter,
+    MultipleSelectFilter,
+    ExtendedDateFromToRangeFilter, ExtendedModelMultipleChoiceFilter, ExtendedCharFilter,
+)
 from ..serializers.fields import IsNotNullField, IsNullField
-from ..utils import strtobool
-from ..widgets import RangeListWidget
 
 BOOLEAN_CHOICES = (
     ('false', 'False'),
@@ -28,53 +30,33 @@ BOOLEAN_CHOICES = (
 
 FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
     {
-        serializers.IntegerField: {'filter_class': CustomRangeFilter},
-        serializers.DateField: {'filter_class': DateFromToRangeFilter, 'extra': lambda f: {"widget": RangeListWidget}},
-        serializers.DateTimeField: {'filter_class': DateFromToRangeFilter, 'extra': lambda f: {"widget": RangeListWidget}},
+        serializers.IntegerField: {'filter_class': ExtendedNumberFilter},
+        serializers.DateField: {'filter_class': ExtendedDateFromToRangeFilter},
+        serializers.DateTimeField: {'filter_class': ExtendedDateFromToRangeFilter},
         serializers.TimeField: {'filter_class': TimeFilter},
-        serializers.DecimalField: {'filter_class': CustomRangeFilter},
-        serializers.FloatField: {'filter_class': CustomRangeFilter},
+        serializers.DecimalField: {'filter_class': ExtendedNumberFilter},
+        serializers.FloatField: {'filter_class': ExtendedNumberFilter},
         serializers.BooleanField: {'filter_class': BooleanFilter},
-        serializers.NullBooleanField: {'filter_class': BooleanFilter},
-        serializers.SlugField: {'filter_class': CharFilter},
         serializers.EmailField: {'filter_class': CharFilter},
         serializers.FileField: {'filter_class': CharFilter},
         serializers.URLField: {'filter_class': CharFilter},
         serializers.UUIDField: {'filter_class': UUIDFilter},
-        serializers.ManyRelatedField: {'filter_class': MultipleSelectFilter, 'extra': lambda f: {"distinct": True}},
+        serializers.CharField: {'filter_class': ExtendedCharFilter},
+        serializers.PrimaryKeyRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset}},
+        serializers.SlugRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset, "to_field_name": f.slug_field}},
+        serializers.ManyRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.child_relation.queryset}},
         serializers.RelatedField: {'filter_class': MultipleSelectFilter},
-        serializers.CharField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "icontains"}},
-        serializers.ReadOnlyField: {'filter_class': CharFilter},
         serializers.JSONField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "icontains"}},
         serializers.ListField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "contains"}},
         IsNotNullField: {'filter_class': IsNotNullFilter},
         IsNullField: {'filter_class': IsNullFilter},
+        serializers.ReadOnlyField: {'filter_class': CharFilter},
         serializers.ChoiceField: {
-            'filter_class': CustomMultipleChoiceFilter,
+            'filter_class': ExtendedMultipleChoiceFilter,
             'extra': lambda f: {"choices": list(f.choices.items())},
         },
-        serializers.MultipleChoiceField: {
-            'filter_class': CustomMultipleChoiceFilter,
-            'extra': lambda f: {"choices": list(f.choices.items())},
-        },
-
     }
 )
-
-
-class DjangoFilterBackendListFixMixin:
-    """
-    A custom filter that supports dynamic table.
-    """
-
-    def filter_queryset(self, request, queryset, view):
-        fixed_qp = request.query_params.copy()
-        for qp in request.query_params:
-            if qp.endswith('[]'):
-                fixed_qp.setlist(qp[:-2], fixed_qp.pop(qp))
-
-        request._request.GET = fixed_qp
-        return super().filter_queryset(request, queryset, view)
 
 
 class AutoFilterBackendMixin:
@@ -105,7 +87,7 @@ class AutoFilterBackendMixin:
         if not isinstance(serializer, serializers.ModelSerializer):
             return None
 
-        filterset_model = serializer.Meta.model
+        filterset_model = serializer.Meta.model  # noqa
         filterset_fields = {}
 
         for filter_name, field in serializer.fields.items():
@@ -120,8 +102,13 @@ class AutoFilterBackendMixin:
             if get_model_field(filterset_model, field_name) is None and filter_name not in queryset.query.annotations:
                 continue
 
-            extra = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field].get("extra")
+            try:
+                filter_spec = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field]
+            except KeyError:
+                warnings.warn(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
+                continue
 
+            extra = filter_spec.get("extra")
             kwargs = {"field_name": field_name}
             if callable(extra):
                 kwargs.update(extra(field))
@@ -130,18 +117,18 @@ class AutoFilterBackendMixin:
                 warnings.warn(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
                 continue
 
-            filterset_field = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field]["filter_class"](**kwargs)
+            filterset_field = filter_spec["filter_class"](**kwargs)
             filterset_fields[filter_name] = filterset_field
 
         if filterset_overwrite:
             filterset_fields.update(filterset_overwrite)
 
-        AutoFilterSet = type("AutoFilterSet", (self.filterset_base,), filterset_fields)
+        AutoFilterSet = type("AutoFilterSet", (self.filterset_base,), filterset_fields)  # noqa
 
         return AutoFilterSet
 
 
-class OrderingByFieldNameFilterMixin:
+class OrderingFilterBackend(OrderingFilter):
     """
     Extra supporting for ordering by serializer field name
     """
@@ -216,7 +203,5 @@ class OrderingByFieldNameFilterMixin:
         return fixed_fields
 
 
-class DynamicFilterBackend(
-    DjangoFilterBackendListFixMixin, AutoFilterBackendMixin, DjangoFilterBackend
-):
+class AutoFilterBackend(AutoFilterBackendMixin, DjangoFilterBackend):
     ...
