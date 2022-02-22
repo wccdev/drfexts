@@ -2,9 +2,10 @@ import uuid
 import warnings
 from functools import partial
 from django.contrib.postgres.fields import ArrayField as PGArrayField
-from django.conf import settings
+from django.contrib.contenttypes import fields as ct_fields
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.core import checks
 from django.db.models import CASCADE
 
 from .constants import CommonStatus, AuditStatus
@@ -24,6 +25,22 @@ class NullHelpTextMixin:
         kwargs['null'] = False
         kwargs.setdefault('help_text', verbose_name)
         super().__init__(verbose_name, *args, **kwargs)
+
+
+class RelatedNameCheckMixin:
+    def check(self, **kwargs):
+        return [
+            *super().check(**kwargs),  # noqa
+            *self._check_related_name(),
+        ]
+
+    def _check_related_name(self, **kwargs):
+        return [
+            checks.Warning(
+                "Setting 'related_name' on a RelatedField may be better!",
+                obj=self,
+            )
+        ] if self.remote_field.related_name is None else []  # noqa
 
 
 class AutoField(models.AutoField):
@@ -72,6 +89,10 @@ class ImageField(DefaultHelpTextMixin, models.ImageField):
     pass
 
 
+class FilePathField(DefaultHelpTextMixin, models.FilePathField):
+    pass
+
+
 class FloatField(DefaultHelpTextMixin, models.FloatField):
     pass
 
@@ -88,11 +109,23 @@ class DateField(DefaultHelpTextMixin, models.DateField):
     pass
 
 
+class TimeField(DefaultHelpTextMixin, models.TimeField):
+    pass
+
+
+class DurationField(DefaultHelpTextMixin, models.DurationField):
+    pass
+
+
 class EmailField(DefaultHelpTextMixin, models.EmailField):
     pass
 
 
 class URLField(DefaultHelpTextMixin, models.URLField):
+    pass
+
+
+class IPAddressField(DefaultHelpTextMixin, models.IPAddressField):
     pass
 
 
@@ -104,8 +137,11 @@ class JSONField(DefaultHelpTextMixin, models.JSONField):
     pass
 
 
-class ArrayField(DefaultHelpTextMixin, PGArrayField):
-    pass
+class ArrayField(PGArrayField):
+    def __init__(self, verbose_name, base_field, **kwargs):
+        kwargs.setdefault('help_text', verbose_name)
+        kwargs.setdefault('verbose_name', verbose_name)
+        super().__init__(base_field, **kwargs)
 
 
 class AutoUUIDField(models.UUIDField):
@@ -233,7 +269,7 @@ class StatusField(models.PositiveSmallIntegerField):
     def __init__(self, verbose_name="状态", **kwargs):
         kwargs.setdefault('choices', CommonStatus.choices)
         kwargs.setdefault('default', CommonStatus.VALID)
-        kwargs.setdefault('help_text', '该记录的状态')
+        kwargs.setdefault('help_text', '状态(50：有效，100：已失效，75：待失效，10：待生效，0：删除)')
         super().__init__(verbose_name, **kwargs)
 
 
@@ -250,19 +286,7 @@ class AuditStatusField(models.PositiveSmallIntegerField):
         super().__init__(verbose_name, **kwargs)
 
 
-class VirtualForeignKey(models.ForeignKey):
-    def __init__(self, verbose_name, to, *args, **kwargs):
-        kwargs.setdefault("verbose_name", verbose_name)
-        kwargs.setdefault("on_delete", models.CASCADE)
-        kwargs.setdefault("db_constraint", False)
-
-        if "related_name" not in kwargs:
-            warnings.warn("建议设置related_name！")
-
-        super().__init__(to, *args, **kwargs)
-
-
-class OneToOneField(models.OneToOneField):
+class VirtualForeignKey(RelatedNameCheckMixin, models.ForeignKey):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
         kwargs.setdefault("on_delete", models.CASCADE)
@@ -270,13 +294,47 @@ class OneToOneField(models.OneToOneField):
         super().__init__(to, *args, **kwargs)
 
 
-class VirtualManyToMany(models.ManyToManyField):
+class OneToOneField(RelatedNameCheckMixin, models.OneToOneField):
+    def __init__(self, verbose_name, to, *args, **kwargs):
+        kwargs.setdefault("verbose_name", verbose_name)
+        kwargs.setdefault("on_delete", models.CASCADE)
+        kwargs.setdefault("db_constraint", False)
+        super().__init__(to, *args, **kwargs)
+
+
+class VirtualManyToMany(RelatedNameCheckMixin, models.ManyToManyField):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
         if "through" not in kwargs:
             kwargs["db_constraint"] = False
 
-        if "related_name" not in kwargs:
-            warnings.warn("建议设置related_name！")
-
         super().__init__(to, *args, **kwargs)
+
+
+class GenericForeignKey(ct_fields.GenericForeignKey):
+    def __init__(self, ct_field='content_type', fk_field='object_id', for_concrete_model=True):
+        super().__init__(ct_field=ct_field, fk_field=fk_field, for_concrete_model=for_concrete_model)
+
+
+class GenericRelation(ct_fields.GenericRelation):
+    def __init__(
+        self,
+        verbose_name,
+        to,
+        object_id_field='object_id',
+        content_type_field='content_type',
+        for_concrete_model=True,
+        related_query_name=None,
+        limit_choices_to=None,
+        **kwargs,
+    ):
+        super().__init__(
+            to,
+            object_id_field=object_id_field,
+            content_type_field=content_type_field,
+            for_concrete_model=for_concrete_model,
+            related_query_name=related_query_name,
+            limit_choices_to=limit_choices_to,
+            verbose_name=verbose_name,
+            **kwargs,
+        )

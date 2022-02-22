@@ -42,8 +42,8 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         serializers.URLField: {'filter_class': CharFilter},
         serializers.UUIDField: {'filter_class': UUIDFilter},
         serializers.CharField: {'filter_class': ExtendedCharFilter},
-        serializers.PrimaryKeyRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset}},
-        serializers.SlugRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset, "to_field_name": f.slug_field}},
+        serializers.PrimaryKeyRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset, "distinct": False}},
+        serializers.SlugRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset, "to_field_name": f.slug_field, "distinct": False}},
         serializers.ManyRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.child_relation.queryset}},
         serializers.RelatedField: {'filter_class': MultipleSelectFilter},
         serializers.JSONField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "icontains"}},
@@ -53,7 +53,7 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         serializers.ReadOnlyField: {'filter_class': CharFilter},
         serializers.ChoiceField: {
             'filter_class': ExtendedMultipleChoiceFilter,
-            'extra': lambda f: {"choices": list(f.choices.items())},
+            'extra': lambda f: {"choices": list(f.choices.items()), "distinct": False},
         },
     }
 )
@@ -109,7 +109,7 @@ class AutoFilterBackendMixin:
                 continue
 
             extra = filter_spec.get("extra")
-            kwargs = {"field_name": field_name}
+            kwargs = {"field_name": field_name, "label": field.label}
             if callable(extra):
                 kwargs.update(extra(field))
 

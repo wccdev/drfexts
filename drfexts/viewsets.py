@@ -116,6 +116,7 @@ class DynamicListModelMixin:
 
 class ExtGenericViewSet(GenericViewSet):
     _default_key = "default"
+    queryset_function_name = "process_queryset"
     # The filter backend classes to use for queryset filtering
 
     def get_serializer_class(self):
@@ -178,8 +179,8 @@ class ExtGenericViewSet(GenericViewSet):
             queryset = queryset.all()
             # Perform optimization on queryset
             serilaizer_class = self.get_serializer_class()
-            if hasattr(serilaizer_class, "setup_eager_loading"):
-                queryset = serilaizer_class.setup_eager_loading(queryset)
+            if hasattr(serilaizer_class, self.queryset_function_name):
+                queryset = getattr(serilaizer_class, self.queryset_function_name)(queryset)
 
         return queryset
 

@@ -138,23 +138,6 @@ class MultipleChoiceSearchFilter(MultiSearchMixin, ModelMultipleChoiceFilter):
     lookup_expr = 'in'
 
 
-class NotDistinctMultipleChoiceFilter(MultipleChoiceFilter):
-    def __init__(self, *args, **kwargs):
-        self.choices = kwargs.get("choices")
-        if not self.choices:
-            raise ValueError('"choices" is a necessary parameter in this Filter')
-        kwargs.setdefault("distinct", False)
-        super(NotDistinctMultipleChoiceFilter, self).__init__(*args, **kwargs)
-
-    def is_noop(self, qs, value):
-        """
-        穷举choice选项时，返回true，避免非必要的查询
-        """
-        if len(set(value)) == len(self.choices):
-            return True
-        return False
-
-
 class IsNullFilter(Filter):
     field_class = forms.NullBooleanField
 
@@ -185,9 +168,25 @@ class ExtendedModelMultipleChoiceFilter(ModelMultipleChoiceFilter):
 
 
 class ExtendedMultipleChoiceFilter(MultipleChoiceFilter):
+    always_filter = False
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("widget", FixedQueryArrayWidget)
         super().__init__(*args, **kwargs)
+
+    def is_noop(self, qs, value):
+        """
+        Return `True` to short-circuit unnecessary and potentially slow
+        filtering.
+        """
+        if self.always_filter:
+            return False
+
+        # A reasonable default for being a noop...
+        if len(value) == len(self.field.choices):
+            return True
+
+        return False
 
 
 class ExtendedRangeFilterMixin:
