@@ -1,5 +1,4 @@
 import uuid
-import warnings
 from functools import partial
 from django.contrib.postgres.fields import ArrayField as PGArrayField
 from django.contrib.contenttypes import fields as ct_fields
@@ -7,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.core import checks
 from django.db.models import CASCADE
+from django_currentuser.db.models import CurrentUserField
 
 from .constants import CommonStatus, AuditStatus
 from .utils import get_serial_code
@@ -35,12 +35,16 @@ class RelatedNameCheckMixin:
         ]
 
     def _check_related_name(self, **kwargs):
-        return [
-            checks.Warning(
-                "Setting 'related_name' on a RelatedField may be better!",
-                obj=self,
-            )
-        ] if self.remote_field.related_name is None else []  # noqa
+        return (
+            [
+                checks.Warning(
+                    "Setting 'related_name' on a RelatedField may be better!",
+                    obj=self,
+                )
+            ]
+            if self.remote_field.related_name is None
+            else []
+        )  # noqa
 
 
 class AutoField(models.AutoField):
@@ -219,17 +223,32 @@ class CreatedAtField(models.DateTimeField):
         super().__init__(verbose_name, **kwargs)
 
 
-class CreatorField(models.ForeignKey):
+class CreatedByField(CurrentUserField):
     """
-    creator = CreatorField()
+    created_by = CreatedByField()
     """
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('max_length', 128)
-        kwargs.setdefault('null', True)
-        kwargs.setdefault('blank', True)
-        kwargs.setdefault('verbose_name', '创建者')
+        kwargs.setdefault('verbose_name', '创建人')
         kwargs.setdefault('help_text', '该记录的创建者')
+        kwargs.setdefault('related_name', '%(class)s_created_by')
+        kwargs.setdefault("on_delete", models.CASCADE)
+        kwargs['db_constraint'] = False
+        super().__init__(*args, **kwargs)
+
+
+class UpdatedByField(CurrentUserField):
+    """
+    updated_by = UpdatedByField()
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('on_update', True)
+        kwargs.setdefault('verbose_name', '修改人')
+        kwargs.setdefault('help_text', '该记录的修改人')
+        kwargs.setdefault('related_name', '%(class)s_updated_by')
+        kwargs.setdefault("on_delete", models.CASCADE)
+        kwargs['db_constraint'] = False
         super().__init__(*args, **kwargs)
 
 
@@ -289,16 +308,28 @@ class AuditStatusField(models.PositiveSmallIntegerField):
 class VirtualForeignKey(RelatedNameCheckMixin, models.ForeignKey):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
-        kwargs.setdefault("on_delete", models.CASCADE)
-        kwargs.setdefault("db_constraint", False)
+        kwargs['db_constraint'] = False
+
+        if kwargs.get("null"):
+            kwargs.setdefault("blank", True)
+            kwargs.setdefault("on_delete", models.SET_NULL)
+        else:
+            kwargs.setdefault("on_delete", models.CASCADE)
+
         super().__init__(to, *args, **kwargs)
 
 
 class OneToOneField(RelatedNameCheckMixin, models.OneToOneField):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
-        kwargs.setdefault("on_delete", models.CASCADE)
-        kwargs.setdefault("db_constraint", False)
+        kwargs["db_constraint"] = False
+
+        if kwargs.get("null"):
+            kwargs.setdefault("blank", True)
+            kwargs.setdefault("on_delete", models.SET_NULL)
+        else:
+            kwargs.setdefault("on_delete", models.CASCADE)
+
         super().__init__(to, *args, **kwargs)
 
 

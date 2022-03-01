@@ -2,7 +2,6 @@ from itertools import chain
 
 from django.db import models
 from django.db.models import Func, fields
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from .constants import CommonStatus
 from .fields import (
@@ -12,7 +11,7 @@ from .fields import (
     StatusField,
     DefaultCodeField,
     AuditStatusField,
-    VirtualForeignKey,
+    CreatedByField, UpdatedByField,
 )
 
 User = get_user_model()
@@ -70,8 +69,8 @@ class BaseCreatorModel(models.Model):
     """
 
     status = StatusField()  # 状态
-    created_by = VirtualForeignKey("创建人", User, db_column="created_by", related_name='%(class)s_created_by')  # 创建者
-    updated_by = VirtualForeignKey("修改人", User, db_column="updated_by", related_name='%(class)s_updated_by')  # 修改者
+    created_by = CreatedByField()  # 创建者
+    updated_by = UpdatedByField()  # 修改者
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
@@ -101,8 +100,8 @@ class AuditModel(models.Model):
 
     status = StatusField()  # 状态
     audit_status = AuditStatusField()  # 审核状态
-    created_by = VirtualForeignKey("创建人", User, db_column="created_by", related_name='%(class)s_created_by')  # 创建者
-    updated_by = VirtualForeignKey("修改人", User, db_column="updated_by", related_name='%(class)s_updated_by')  # 修改者
+    created_by = CreatedByField()  # 创建者
+    updated_by = UpdatedByField()  # 修改者
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
