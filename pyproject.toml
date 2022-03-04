@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "drfexts"
-version = "0.7.6"
+version = "0.8.1"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -24,6 +24,7 @@ openpyxl = ">=3.0.9"
 pydantic = "=1.8.2"
 ujson = ">=5.1.0"
 django-currentuser = "^0.5.3"
+char = "^0.1.2"
 
 [tool.poetry.dev-dependencies]
 #pytest = "^4.0"

@@ -1,8 +1,7 @@
 import warnings
 
 from django.core.exceptions import ImproperlyConfigured
-from django_filters.rest_framework import DjangoFilterBackend
-
+from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.filters import (
     BooleanFilter,
     CharFilter,
@@ -59,17 +58,35 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
 )
 
 
+class InitialFilterSet(filterset.FilterSet):
+    def __init__(self, data=None, *args, **kwargs):
+        # if filterset is bound, use initial values as defaults
+        if data is not None:
+            # get a mutable copy of the QueryDict
+            data = data.copy()
+
+            for name, f in self.base_filters.items():
+                initial = f.extra.get('initial')
+
+                # filter param is either missing or empty, use initial as default
+                if not data.get(name) and initial:
+                    data[name] = initial
+
+        super().__init__(data, *args, **kwargs)
+
+
 class AutoFilterBackendMixin:
     """
     Generate filterset class for
     """
+    filterset_base = InitialFilterSet
 
     def get_filterset_class(self, view, queryset=None):
         """
         Return the `FilterSet` class used to filter the queryset.
         """
         filterset_class = getattr(view, 'filterset_class', None)
-        filterset_overwrite = getattr(view, 'filterset_overwrite', {})
+        filterset_fields_overwrite = getattr(view, 'filterset_fields_overwrite', {})
 
         if filterset_class:
             filterset_model = filterset_class._meta.model
@@ -109,7 +126,7 @@ class AutoFilterBackendMixin:
                 continue
 
             extra = filter_spec.get("extra")
-            kwargs = {"field_name": field_name, "label": field.label}
+            kwargs = {"field_name": field_name, "label": field.label, "help_text": field.help_text}
             if callable(extra):
                 kwargs.update(extra(field))
 
@@ -120,11 +137,10 @@ class AutoFilterBackendMixin:
             filterset_field = filter_spec["filter_class"](**kwargs)
             filterset_fields[filter_name] = filterset_field
 
-        if filterset_overwrite:
-            filterset_fields.update(filterset_overwrite)
+        if filterset_fields_overwrite:
+            filterset_fields.update(filterset_fields_overwrite)
 
         AutoFilterSet = type("AutoFilterSet", (self.filterset_base,), filterset_fields)  # noqa
-
         return AutoFilterSet
 
 
@@ -205,3 +221,4 @@ class OrderingFilterBackend(OrderingFilter):
 
 class AutoFilterBackend(AutoFilterBackendMixin, DjangoFilterBackend):
     ...
+

@@ -10,6 +10,17 @@ python-versions = ">=3.7"
 tests = ["pytest", "pytest-asyncio", "mypy (>=0.800)"]
 
 [[package]]
+name = "char"
+version = "0.1.2"
+description = "decorator for fast check types of arguments which are given to function"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+testing = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "django"
 version = "3.2.12"
 description = "A high-level Python Web framework that encourages rapid development and clean, pragmatic design."
@@ -177,12 +188,16 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "e5569a4be6fc5b9766497e45873e0382a9f9e4eba3c194649d9a3300bcb4f788"
+content-hash = "66b079af2bc083b822a7100cf44bef22584c91ce16e8e6d7924feac1d3f16e6f"
 
 [metadata.files]
 asgiref = [
     {file = "asgiref-3.5.0-py3-none-any.whl", hash = "sha256:88d59c13d634dcffe0510be048210188edd79aeccb6a6c9028cdad6f31d730a9"},
     {file = "asgiref-3.5.0.tar.gz", hash = "sha256:2f8abc20f7248433085eda803936d98992f1343ddb022065779f37c5da0181d0"},
+]
+char = [
+    {file = "char-0.1.2-py2.py3-none-any.whl", hash = "sha256:e2719f713a62134657f51da07ebc6e5c2acb11862f65b8be14e6b596fa345e80"},
+    {file = "char-0.1.2.tar.gz", hash = "sha256:e6020cf4c81e43484e0b0a1d5d0668a5e56dfff4dadea24629d92a2a3934c79a"},
 ]
 django = [
     {file = "Django-3.2.12-py3-none-any.whl", hash = "sha256:9b06c289f9ba3a8abea16c9c9505f25107809fb933676f6c891ded270039d965"},

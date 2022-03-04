@@ -34,7 +34,7 @@ class BaseModel(models.Model):
     标准抽象模型模型,可直接继承使用
     """
 
-    status = models.PositiveSmallIntegerField(choices=CommonStatus.choices, default=CommonStatus.TO_VALID)  # 状态
+    status = StatusField()  # 状态
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
@@ -51,7 +51,7 @@ class BaseCodeModel(models.Model):
     """
 
     code = DefaultCodeField()  # 编号
-    status = models.PositiveSmallIntegerField(choices=CommonStatus.choices, default=CommonStatus.TO_VALID)  # 状态
+    status = StatusField()  # 状态
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 

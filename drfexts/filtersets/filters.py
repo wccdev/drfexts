@@ -9,6 +9,7 @@ from django_filters.filters import (
     Filter,
     ModelMultipleChoiceFilter,
     DateFromToRangeFilter,
+Filter
 )
 
 import operator
@@ -239,6 +240,8 @@ class ExtendedCharFilter(CharFilter):
 
         self.lookup_expr = lookup_expr
         return super().filter(qs, value)
+
+
 
 
 
