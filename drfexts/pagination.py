@@ -9,23 +9,39 @@ from rest_framework.response import Response
 from .paginators import WithoutCountPaginator
 
 
-class StandardResultsSetPagination(pagination.PageNumberPagination):
-    page_size = 10
-    page_size_query_param = "page_size"
-    max_page_size = 10
-
-
 class CustomPagination(pagination.PageNumberPagination):
     page_size_query_param = "page_size"
     max_page_size = 500
 
     def get_paginated_response(self, data):
-        return Response({
-            'total': self.page.paginator.count,
-            'page_size': self.page.paginator.per_page,
-            'current_page': self.page.number,
-            'results': data,
-        })
+        return Response(
+            {
+                'total': self.page.paginator.count,
+                'page_size': self.page.paginator.per_page,
+                'current_page': self.page.number,
+                'results': data,
+            }
+        )
+
+    def get_paginated_response_schema(self, schema):
+        return {
+            'type': 'object',
+            'properties': {
+                'total': {
+                    'type': 'integer',
+                    'example': 123,
+                },
+                'page_size': {
+                    'type': 'integer',
+                    'example': 15,
+                },
+                'current_page': {
+                    'type': 'integer',
+                    'example': 1,
+                },
+                'results': schema,
+            },
+        }
 
 
 class WithoutCountPagination(CustomPagination):
@@ -116,5 +132,3 @@ class CursorSetPagination(CursorPagination):
 
     def get_paginated_response(self, data):
         return Response({"previous": self.get_previous_link(), "next": self.get_next_link(), "list": data})
-
-

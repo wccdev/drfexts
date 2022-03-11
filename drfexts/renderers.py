@@ -1,78 +1,122 @@
-import datetime
-from typing import Mapping, Optional, Union, Any
+import functools
+import operator
+from decimal import Decimal
 
-import ujson
+import orjson
+from typing import Optional, Any
 import unicodecsv as csv
 from io import BytesIO
+import datetime
 
 from django.conf import settings
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
+
 from rest_framework import status
-from rest_framework.renderers import BaseRenderer, JSONRenderer
+from django.utils.encoding import force_str
+
+from rest_framework.settings import api_settings
+from rest_framework.renderers import BaseRenderer
 from rest_framework.status import is_success
+from django.utils.functional import Promise
+from django.db.models.query import QuerySet
+
+__all__ = ["CustomJSONRenderer", "CustomCSVRenderer", "CustomExcelRenderer"]
 
 
-class CustomJSONRenderer(JSONRenderer):
+class CustomJSONRenderer(BaseRenderer):
     """
     Renderer which serializes to JSON.
-    Applies JSON's backslash-u character escaping for non-ascii characters.
-    Uses the blazing-fast ujson library for serialization.
+    Uses the Rust-backed orjson library for serialization speed.
     """
 
-    # Controls whether forward slashes (/) are escaped.
-    escape_forward_slashes: bool = False
-    # Used to enable special encoding of "unsafe" HTML characters into safer
-    # Unicode sequences.
-    encode_html_chars: bool = False
+    media_type = "application/json"
+    html_media_type = "text/html"
+    format = "json"
+    charset = None
+
+    options = functools.reduce(
+        operator.or_,
+        api_settings.user_settings.get("ORJSON_RENDERER_OPTIONS", ()),
+        orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_PASSTHROUGH_DATETIME,
+    )
+
+    @staticmethod
+    def default(obj: Any) -> Any:
+        """
+        When orjson doesn't recognize an object type for serialization it passes
+        that object to this function which then converts the object to its
+        native Python equivalent.
+
+        :param obj: Object of any type to be converted.
+        :return: native python object
+        """
+
+        if isinstance(obj, Promise):
+            return force_str(obj)
+        elif isinstance(obj, datetime.datetime):
+            return obj.strftime(api_settings.DATETIME_FORMAT)
+        elif isinstance(obj, Decimal):
+            if api_settings.COERCE_DECIMAL_TO_STRING:
+                return str(obj)
+            else:
+                return float(obj)
+        elif isinstance(obj, QuerySet):
+            return tuple(obj)
+        elif hasattr(obj, "tolist"):
+            return obj.tolist()
+        elif hasattr(obj, "__iter__"):
+            return list(item for item in obj)
 
     def render(
         self,
-        data: Union[dict, None],
-        accepted_media_type: Optional[str] = None,
-        renderer_context: Mapping[str, Any] = None,
+        data: Any,
+        media_type: Optional[str] = None,
+        renderer_context: Any = None,
     ) -> bytes:
+        """
+        Serializes Python objects to JSON.
 
-        accepted_media_type = accepted_media_type or ""
-        renderer_context = renderer_context or {}
-        indent = self.get_indent(accepted_media_type, renderer_context)
-        response = renderer_context['response']
-        status_code = getattr(response, 'error_code', response.status_code)
-        response.status_code = status.HTTP_200_OK
-        playload = {
-            "ret": status_code,
-            "msg": "success",
-        }
+        :param data: The response data, as set by the Response() instantiation.
+        :param media_type: If provided, this is the accepted media type, of the
+                `Accept` HTTP header.
+        :param renderer_context: If provided, this is a dictionary of contextual
+                information provided by the view. By default this will include
+                the following keys: view, request, response, args, kwargs
+        :return: bytes() representation of the data encoded to UTF-8
+        """
+        if response := renderer_context.get('response'):
+            status_code = getattr(response, 'error_code', response.status_code)
+            response.status_code = status.HTTP_200_OK
+            playload = {
+                "ret": status_code,
+                "msg": "success",
+            }
 
-        if data is not None:
-            playload["data"] = data
+            if data is not None:
+                playload["data"] = data
 
-        if not is_success(status_code):
-            try:
-                playload["msg"] = data["detail"]
-                playload.pop("data", None)
-            except Exception:
-                playload["msg"] = "error"
+            if not is_success(status_code):
+                try:
+                    playload["msg"] = data["detail"]
+                    playload.pop("data", None)
+                except Exception:
+                    playload["msg"] = "error"
+            else:
+                playload["ret"] = status.HTTP_200_OK
+        elif data is None:
+            return b""
         else:
-            playload["ret"] = status.HTTP_200_OK
+            playload = data
 
-        ret = ujson.dumps(
-            playload,
-            ensure_ascii=self.ensure_ascii,
-            escape_forward_slashes=self.escape_forward_slashes,
-            encode_html_chars=self.encode_html_chars,
-            indent=indent or 0,
-        )
+        # If `indent` is provided in the context, then pretty print the result.
+        # E.g. If we're being called by RestFramework's BrowsableAPIRenderer.
+        options = self.options
+        if media_type == self.html_media_type:
+            options |= orjson.OPT_INDENT_2
 
-        # force return value to unicode
-        if isinstance(ret, str):
-            # We always fully escape \u2028 and \u2029 to ensure we output JSON
-            # that is a strict javascript subset. If bytes were returned
-            # by json.dumps() then we don't have these characters in any case.
-            # See: http://timelessrepo.com/json-isnt-a-javascript-subset
-            ret = ret.replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
-            return bytes(ret.encode("utf-8"))
-        return ret
+        serialized: bytes = orjson.dumps(playload, default=self.default, option=options)
+        return serialized
 
 
 class BaseExportRenderer(BaseRenderer):
@@ -212,7 +256,7 @@ class CustomExcelRenderer(BaseExportRenderer):
     freeze_header = True
 
     def excel_style(self, row, col):
-        """ Convert given row and column number to an Excel-style cell name. """
+        """Convert given row and column number to an Excel-style cell name."""
         result = []
         while col:
             col, rem = divmod(col - 1, 26)

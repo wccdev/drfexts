@@ -18,7 +18,9 @@ from .filters import (
     ExtendedMultipleChoiceFilter,
     ExtendedNumberFilter,
     MultipleSelectFilter,
-    ExtendedDateFromToRangeFilter, ExtendedModelMultipleChoiceFilter, ExtendedCharFilter,
+    ExtendedDateFromToRangeFilter,
+    ExtendedModelMultipleChoiceFilter,
+    ExtendedCharFilter,
 )
 from ..serializers.fields import IsNotNullField, IsNullField
 
@@ -41,9 +43,18 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         serializers.URLField: {'filter_class': CharFilter},
         serializers.UUIDField: {'filter_class': UUIDFilter},
         serializers.CharField: {'filter_class': ExtendedCharFilter},
-        serializers.PrimaryKeyRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset, "distinct": False}},
-        serializers.SlugRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.queryset, "to_field_name": f.slug_field, "distinct": False}},
-        serializers.ManyRelatedField: {'filter_class': ExtendedModelMultipleChoiceFilter, 'extra': lambda f: {"queryset": f.child_relation.queryset}},
+        serializers.PrimaryKeyRelatedField: {
+            'filter_class': ExtendedModelMultipleChoiceFilter,
+            'extra': lambda f: {"queryset": f.queryset, "distinct": False},
+        },
+        serializers.SlugRelatedField: {
+            'filter_class': ExtendedModelMultipleChoiceFilter,
+            'extra': lambda f: {"queryset": f.queryset, "to_field_name": f.slug_field, "distinct": False},
+        },
+        serializers.ManyRelatedField: {
+            'filter_class': ExtendedModelMultipleChoiceFilter,
+            'extra': lambda f: {"queryset": f.child_relation.queryset},
+        },
         serializers.RelatedField: {'filter_class': MultipleSelectFilter},
         serializers.JSONField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "icontains"}},
         serializers.ListField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "contains"}},
@@ -79,6 +90,7 @@ class AutoFilterBackendMixin:
     """
     Generate filterset class for
     """
+
     filterset_base = InitialFilterSet
 
     def get_filterset_class(self, view, queryset=None):
@@ -116,7 +128,9 @@ class AutoFilterBackendMixin:
                 continue
 
             field_name = field.source.replace(".", "__") or filter_name
-            if get_model_field(filterset_model, field_name) is None and filter_name not in queryset.query.annotations:
+            if get_model_field(filterset_model, field_name) is None and (
+                queryset is not None and filter_name not in queryset.query.annotations
+            ):
                 continue
 
             try:
@@ -221,4 +235,3 @@ class OrderingFilterBackend(OrderingFilter):
 
 class AutoFilterBackend(AutoFilterBackendMixin, DjangoFilterBackend):
     ...
-

@@ -236,6 +236,9 @@ class CreatedByField(CurrentUserField):
         kwargs['db_constraint'] = False
         super().__init__(*args, **kwargs)
 
+    def _warn_for_shadowing_args(self, *args, **kwargs):
+        pass
+
 
 class UpdatedByField(CurrentUserField):
     """
@@ -250,6 +253,9 @@ class UpdatedByField(CurrentUserField):
         kwargs.setdefault("on_delete", models.CASCADE)
         kwargs['db_constraint'] = False
         super().__init__(*args, **kwargs)
+
+    def _warn_for_shadowing_args(self, *args, **kwargs):
+        pass
 
 
 class CreatorCharField(models.CharField):
@@ -288,7 +294,7 @@ class StatusField(models.PositiveSmallIntegerField):
     def __init__(self, verbose_name="状态", **kwargs):
         kwargs.setdefault('choices', CommonStatus.choices)
         kwargs.setdefault('default', CommonStatus.VALID)
-        kwargs.setdefault('help_text', '状态(50：有效，100：已失效，75：待失效，10：待生效，0：删除)')
+        kwargs.setdefault('help_text', '100：已失效，75：待失效，50：有效，25：暂停中，10：待生效，5：待提交，0：删除')
         super().__init__(verbose_name, **kwargs)
 
 
@@ -305,7 +311,7 @@ class AuditStatusField(models.PositiveSmallIntegerField):
         super().__init__(verbose_name, **kwargs)
 
 
-class VirtualForeignKey(RelatedNameCheckMixin, models.ForeignKey):
+class VirtualForeignKey(models.ForeignKey):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
         kwargs['db_constraint'] = False
@@ -319,7 +325,7 @@ class VirtualForeignKey(RelatedNameCheckMixin, models.ForeignKey):
         super().__init__(to, *args, **kwargs)
 
 
-class OneToOneField(RelatedNameCheckMixin, models.OneToOneField):
+class OneToOneField(models.OneToOneField):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
         kwargs["db_constraint"] = False
@@ -333,7 +339,7 @@ class OneToOneField(RelatedNameCheckMixin, models.OneToOneField):
         super().__init__(to, *args, **kwargs)
 
 
-class VirtualManyToMany(RelatedNameCheckMixin, models.ManyToManyField):
+class VirtualManyToMany(models.ManyToManyField):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
         if "through" not in kwargs:

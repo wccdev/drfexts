@@ -104,6 +104,19 @@ six = "*"
 unicodecsv = "*"
 
 [[package]]
+name = "drf-api-tracking"
+version = "1.8.0"
+description = "Utils to log Django Rest Framework requests to the database"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+Django = ">=1.7"
+djangorestframework = ">=3"
+pytz = "*"
+
+[[package]]
 name = "et-xmlfile"
 version = "1.1.0"
 description = "An implementation of lxml.xmlfile for the standard library"
@@ -188,7 +201,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "66b079af2bc083b822a7100cf44bef22584c91ce16e8e6d7924feac1d3f16e6f"
+content-hash = "a360927b4a6957e83022e5528bd8df9d7276a56c2fa31d56292c518b3b610207"
 
 [metadata.files]
 asgiref = [
@@ -221,6 +234,10 @@ djangorestframework = [
 ]
 djangorestframework-csv = [
     {file = "djangorestframework-csv-2.1.1.tar.gz", hash = "sha256:aa0ee4c894fe319c68e042b05c61dace43a9fb6e6872e1abe1724ca7ea4d15f7"},
+]
+drf-api-tracking = [
+    {file = "drf-api-tracking-1.8.0.tar.gz", hash = "sha256:170b59d4f1db00de46a32a3dc67d8611ecd980a05aa6116eb5ea63b3140a1180"},
+    {file = "drf_api_tracking-1.8.0-py2.py3-none-any.whl", hash = "sha256:197bb53adb9d0805bd8e8793c12684ca77b7fd2869ad483f44fbc9bef8ee5982"},
 ]
 et-xmlfile = [
     {file = "et_xmlfile-1.1.0-py3-none-any.whl", hash = "sha256:a2ba85d1d6a74ef63837eed693bcb89c3f752169b0e3e7ae5b16ca5e1b3deada"},
