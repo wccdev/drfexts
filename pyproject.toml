@@ -13,7 +13,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8"
 django = "^3.2"
 django-storages = ">=1.12.3"
 django-filter = ">=21.1"
