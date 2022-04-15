@@ -41,15 +41,6 @@ class DisplayChoiceField(ChoiceField):
     Serialize: convert value into choice strings
     Deserialize: convert choice strings into value
     """
-    def to_internal_value(self, data):
-        if data == '' and self.allow_blank:
-            return ''
-
-        try:
-            return self.display_strings_to_value[str(data)]
-        except KeyError:
-            self.fail('invalid_choice', input=data)
-
     def to_representation(self, value):
         if value in ('', None):
             return value

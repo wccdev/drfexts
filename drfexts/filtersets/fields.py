@@ -1,6 +1,7 @@
 import operator
 from functools import reduce
 
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import MultipleChoiceField
 from django_filters import MultipleChoiceFilter, ModelMultipleChoiceFilter, CharFilter
@@ -74,3 +75,18 @@ class MultipleValueField(MultipleChoiceField):
 
     def clean(self, values):
         return values and [self.inner_field.clean(value) for value in values]
+
+
+class DisplayMultipleChoiceField(MultipleChoiceField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.choices = [(v, k) for k, v in self.choices]
+
+    def clean(self, value):
+        """
+        Validate the given value and return its "cleaned" value as an
+        appropriate Python object. Raise ValidationError for any errors.
+        """
+        value = super().clean(value)
+        string_to_value_map = dict(self.choices)
+        return [string_to_value_map.get(val) for val in value]

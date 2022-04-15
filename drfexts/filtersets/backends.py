@@ -3,6 +3,7 @@ import warnings
 from django.core.exceptions import ImproperlyConfigured
 from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.filters import (
+    Filter,
     BooleanFilter,
     CharFilter,
     TimeFilter,
@@ -21,8 +22,9 @@ from .filters import (
     ExtendedDateFromToRangeFilter,
     ExtendedModelMultipleChoiceFilter,
     ExtendedCharFilter,
+    ExtendedDisplayMultipleChoiceFilter,
 )
-from ..serializers.fields import IsNotNullField, IsNullField
+from ..serializers.fields import IsNotNullField, IsNullField, DisplayChoiceField
 
 BOOLEAN_CHOICES = (
     ('false', 'False'),
@@ -42,7 +44,6 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         serializers.FileField: {'filter_class': CharFilter},
         serializers.URLField: {'filter_class': CharFilter},
         serializers.UUIDField: {'filter_class': UUIDFilter},
-        serializers.CharField: {'filter_class': ExtendedCharFilter},
         serializers.PrimaryKeyRelatedField: {
             'filter_class': ExtendedModelMultipleChoiceFilter,
             'extra': lambda f: {"queryset": f.queryset, "distinct": False},
@@ -61,10 +62,15 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         IsNotNullField: {'filter_class': IsNotNullFilter},
         IsNullField: {'filter_class': IsNullFilter},
         serializers.ReadOnlyField: {'filter_class': CharFilter},
+        DisplayChoiceField: {
+            'filter_class': ExtendedDisplayMultipleChoiceFilter,
+            'extra': lambda f: {"choices": list(f.choices.items()), 'distinct': False},
+        },
         serializers.ChoiceField: {
             'filter_class': ExtendedMultipleChoiceFilter,
             'extra': lambda f: {"choices": list(f.choices.items()), "distinct": False},
         },
+        serializers.CharField: {'filter_class': ExtendedCharFilter},
     }
 )
 
@@ -119,6 +125,9 @@ class AutoFilterBackendMixin:
         filterset_model = serializer.Meta.model  # noqa
         filterset_fields = {}
 
+        overwrite_fields = {k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, Filter)}
+        overwrite_kwargs = {k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, dict)}
+
         for filter_name, field in serializer.fields.items():
             if (
                 getattr(field, "write_only", False)
@@ -148,11 +157,14 @@ class AutoFilterBackendMixin:
                 warnings.warn(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
                 continue
 
+            overwrite_value = overwrite_kwargs.get(filter_name)
+            if overwrite_value:
+                kwargs.update(overwrite_value)
+
             filterset_field = filter_spec["filter_class"](**kwargs)
             filterset_fields[filter_name] = filterset_field
 
-        if filterset_fields_overwrite:
-            filterset_fields.update(filterset_fields_overwrite)
+        filterset_fields.update(overwrite_fields)
 
         AutoFilterSet = type("AutoFilterSet", (self.filterset_base,), filterset_fields)  # noqa
         return AutoFilterSet

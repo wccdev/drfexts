@@ -15,7 +15,7 @@ Filter
 import operator
 from functools import reduce
 
-from .fields import MultipleValueField
+from .fields import MultipleValueField, DisplayMultipleChoiceField
 from .widgets import ExtendedRangeWidget, ExtendedDateRangeWidget, FixedQueryArrayWidget, LookupTextInput
 
 
@@ -188,6 +188,10 @@ class ExtendedMultipleChoiceFilter(MultipleChoiceFilter):
             return True
 
         return False
+
+
+class ExtendedDisplayMultipleChoiceFilter(ExtendedMultipleChoiceFilter):
+    field_class = DisplayMultipleChoiceField
 
 
 class ExtendedRangeFilterMixin:
