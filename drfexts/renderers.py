@@ -86,24 +86,22 @@ class CustomJSONRenderer(BaseRenderer):
         :return: bytes() representation of the data encoded to UTF-8
         """
         if response := renderer_context.get('response'):
-            status_code = getattr(response, 'error_code', response.status_code)
-            response.status_code = status.HTTP_200_OK
             playload = {
-                "ret": status_code,
+                "ret": response.status_code,
                 "msg": "success",
             }
 
             if data is not None:
                 playload["data"] = data
 
-            if not is_success(status_code):
+            if not is_success(response.status_code):
                 try:
                     playload["msg"] = data["detail"]
                     playload.pop("data", None)
-                except Exception:
+                except KeyError:
                     playload["msg"] = "error"
-            else:
-                playload["ret"] = status.HTTP_200_OK
+
+            response.status_code = status.HTTP_200_OK  # Set all response status to HTTP 200
         elif data is None:
             return b""
         else:
