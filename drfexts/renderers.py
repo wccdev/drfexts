@@ -113,6 +113,7 @@ class CustomJSONRenderer(BaseRenderer):
         if media_type == self.html_media_type:
             options |= orjson.OPT_INDENT_2
 
+        response._rendered_data = playload  # for loging response use
         serialized: bytes = orjson.dumps(playload, default=self.default, option=options)
         return serialized
 
