@@ -1,5 +1,6 @@
 import warnings
 
+from django.contrib.postgres.search import SearchVector, SearchQuery
 from django.core.exceptions import ImproperlyConfigured
 from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.filters import (
@@ -12,7 +13,7 @@ from django_filters.filters import (
 from django_filters.utils import get_model_field
 from rest_framework import serializers
 from rest_framework.utils.field_mapping import ClassLookupDict
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from .filters import (
     IsNullFilter,
     IsNotNullFilter,
@@ -92,7 +93,7 @@ class InitialFilterSet(filterset.FilterSet):
         super().__init__(data, *args, **kwargs)
 
 
-class AutoFilterBackendMixin:
+class AutoFilterBackend(DjangoFilterBackend):
     """
     Generate filterset class for
     """
@@ -105,6 +106,8 @@ class AutoFilterBackendMixin:
         """
         filterset_class = getattr(view, 'filterset_class', None)
         filterset_fields_overwrite = getattr(view, 'filterset_fields_overwrite', {})
+
+        # full text search
 
         if filterset_class:
             filterset_model = filterset_class._meta.model
@@ -245,5 +248,37 @@ class OrderingFilterBackend(OrderingFilter):
         return fixed_fields
 
 
-class AutoFilterBackend(AutoFilterBackendMixin, DjangoFilterBackend):
-    ...
+class FullTextSearchFilter(SearchFilter):
+    search_vector = None
+    search_query = None
+
+    def get_search_vector(self):
+        if isinstance(self.search_vector, (list, tuple)):
+            return SearchVector(*self.search_vector)
+        elif isinstance(self.search_vector, SearchVector):
+            return self.search_vector
+        elif self.search_vector is None:
+            return
+
+        raise ImproperlyConfigured("`search_vector` must be type of list, tuple or 'SearchVector' instance.")
+
+    def get_search_query(self, search_terms):
+        if self.search_query is None:
+            return SearchQuery(' '.join(search_terms))
+        elif isinstance(self.search_query, SearchQuery):
+            return self.search_query
+
+        raise ImproperlyConfigured("`search_query` must be instance of 'SearchQuery'")
+
+    def filter_queryset(self, request, queryset, view):
+        search_terms = self.get_search_terms(request)
+        if not search_terms:
+            return queryset
+
+        search_vector = self.get_search_vector()
+        search_query = self.get_search_query(search_terms)
+
+        if not search_vector or not search_query:
+            return queryset
+
+        return queryset.annotate(search=search_vector).filter(search=search_query)
