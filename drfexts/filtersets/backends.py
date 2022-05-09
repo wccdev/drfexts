@@ -110,7 +110,7 @@ class AutoFilterBackend(DjangoFilterBackend):
         # full text search
 
         if filterset_class:
-            filterset_model = filterset_class._meta.model
+            filterset_model = filterset_class._meta.model  # noqa
 
             # FilterSets do not need to specify a Meta class
             if filterset_model and queryset is not None:
