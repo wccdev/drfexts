@@ -194,6 +194,8 @@ class ExtendedDisplayMultipleChoiceFilter(ExtendedMultipleChoiceFilter):
 
 
 class ExtendedRangeFilterMixin:
+    lookup_expr = None
+
     def filter(self, qs, value):
         if value in EMPTY_VALUES:
             return qs

@@ -1,7 +1,6 @@
 import operator
 from functools import reduce
 
-from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import MultipleChoiceField
 from django_filters import MultipleChoiceFilter, ModelMultipleChoiceFilter, CharFilter
@@ -15,7 +14,7 @@ class MultiSearchMixin:
         super().__init__(*args, **kwargs)
 
     def filter(self, qs, value):
-        if value in EMPTY_VALUES or not value:
+        if value in EMPTY_VALUES:
             return qs
 
         if self.distinct:  # noqa
