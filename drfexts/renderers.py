@@ -86,12 +86,12 @@ class CustomJSONRenderer(BaseRenderer):
         :return: bytes() representation of the data encoded to UTF-8
         """
         if response := renderer_context.get('response'):
-            payload = {
-                "ret": response.status_code,
-                "msg": "success",
-            }
+            payload = {}
             if hasattr(renderer_context.get("request"), "id"):
                 payload["request_id"] = renderer_context["request"].id
+
+            payload["ret"] = response.status_code
+            payload["msg"] = "success"
 
             if data is not None:
                 payload["data"] = data
