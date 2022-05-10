@@ -90,8 +90,8 @@ class CustomJSONRenderer(BaseRenderer):
                 "ret": response.status_code,
                 "msg": "success",
             }
-            if hasattr(renderer_context.get("request"), "request_id"):
-                payload["request_id"] = renderer_context["request"].request_id
+            if hasattr(renderer_context.get("request"), "id"):
+                payload["request_id"] = renderer_context["request"].id
 
             if data is not None:
                 payload["data"] = data
