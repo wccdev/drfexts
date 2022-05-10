@@ -86,26 +86,28 @@ class CustomJSONRenderer(BaseRenderer):
         :return: bytes() representation of the data encoded to UTF-8
         """
         if response := renderer_context.get('response'):
-            playload = {
+            payload = {
                 "ret": response.status_code,
                 "msg": "success",
             }
+            if hasattr(renderer_context.get("request"), "request_id"):
+                payload["request_id"] = renderer_context["request"].request_id
 
             if data is not None:
-                playload["data"] = data
+                payload["data"] = data
 
             if not is_success(response.status_code):
                 try:
-                    playload["msg"] = data["detail"]
-                    playload.pop("data", None)
+                    payload["msg"] = data["detail"]
+                    payload.pop("data", None)
                 except KeyError:
-                    playload["msg"] = "error"
+                    payload["msg"] = "error"
 
             response.status_code = status.HTTP_200_OK  # Set all response status to HTTP 200
         elif data is None:
             return b""
         else:
-            playload = data
+            payload = data
 
         # If `indent` is provided in the context, then pretty print the result.
         # E.g. If we're being called by RestFramework's BrowsableAPIRenderer.
@@ -113,8 +115,8 @@ class CustomJSONRenderer(BaseRenderer):
         if media_type == self.html_media_type:
             options |= orjson.OPT_INDENT_2
 
-        response._rendered_data = playload  # for loging response use
-        serialized: bytes = orjson.dumps(playload, default=self.default, option=options)
+        response._rendered_data = payload  # for loging response use
+        serialized: bytes = orjson.dumps(payload, default=self.default, option=options)
         return serialized
 
 
