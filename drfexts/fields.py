@@ -165,12 +165,20 @@ class DefaultCodeField(models.CharField):
     DEFAULT_LENGTH = 15
 
     def __init__(self, verbose_name="编号", prefix="", **kwargs):
+        self.prefix = prefix
         kwargs['blank'] = True
         kwargs["default"] = partial(get_serial_code, prefix)
         kwargs["max_length"] = self.DEFAULT_LENGTH + len(prefix)
         kwargs['editable'] = False
         kwargs.setdefault("help_text", verbose_name)
         super().__init__(verbose_name, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        # Only include kwarg if it's not the default
+        if self.prefix != "":
+            kwargs['prefix'] = self.prefix
+        return name, path, args, kwargs
 
 
 class DescriptionField(models.TextField):
