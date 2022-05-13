@@ -52,13 +52,13 @@ class MultipleValueFilter(Filter):
     支持传参方式：
         1. ?stage_name[]=123&stage_name[]=124
         2. ?stage_name=123&stage_name=125
-    参考：https://stackoverflow.com/questions/50799411/django-filters-multiple-ids-in-a-single-query-string
+        3. ?stage_name=123,125
     """
-
     field_class = MultipleValueField
 
     def __init__(self, *args, field_class, **kwargs):
         kwargs.setdefault('lookup_expr', 'exact')
+        kwargs.setdefault("widget", FixedQueryArrayWidget)
         super().__init__(*args, field_class=field_class, **kwargs)
 
     def filter(self, qs, value):
@@ -66,11 +66,11 @@ class MultipleValueFilter(Filter):
             return qs
         if self.distinct:
             qs = qs.distinct()
-        _ = Q()
+
         lookup = '%s__%s' % (self.field_name, self.lookup_expr)
-        for _value in value:
-            _ |= Q(**{lookup: _value})
-        qs = self.get_method(qs)(_)
+        queries = (Q(**{lookup: val}) for val in value)
+        conditions = reduce(operator.or_, queries)
+        qs = self.get_method(qs)(conditions)
         return qs
 
 
@@ -96,29 +96,23 @@ class DataPermissionFilter(BaseFilterBackend):
 
 
 class MultiSearchMixin:
-    distinct = True
     lookup_expr = "icontains"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, search_fields, **kwargs):
+        self.search_fields = search_fields
         kwargs.setdefault("lookup_expr", self.lookup_expr)
-        self.search_fields = kwargs.pop('search_fields', None)
         super().__init__(*args, **kwargs)
 
     def filter(self, qs, value):
-        if value in EMPTY_VALUES or not value:
+        if value in EMPTY_VALUES:
             return qs
 
-        if self.distinct:
+        if self.distinct:  # noqa
             qs = qs.distinct()
 
-        if self.search_fields:
-            queries = (Q(**{'%s__%s' % (search_field, self.lookup_expr): value}) for search_field in self.search_fields)
-            conditions = reduce(operator.or_, queries)
-            qs = qs.filter(conditions)
-        else:
-            lookup = '%s__%s' % (self.field_name, self.lookup_expr)
-            qs = self.filter(**{lookup: value})
-
+        queries = (Q(**{'%s__%s' % (search_field, self.lookup_expr): value}) for search_field in self.search_fields)
+        conditions = reduce(operator.or_, queries)
+        qs = self.get_method(qs)(conditions)  # noqa
         return qs
 
 
