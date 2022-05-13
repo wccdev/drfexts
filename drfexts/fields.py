@@ -1,8 +1,9 @@
 import uuid
 from functools import partial
+
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField as PGArrayField
 from django.contrib.contenttypes import fields as ct_fields
-from django.contrib.auth import get_user_model
 from django.db import models
 from django.core import checks
 from django.db.models import CASCADE
@@ -10,8 +11,6 @@ from django_currentuser.db.models import CurrentUserField
 
 from .constants import CommonStatus, AuditStatus
 from .utils import get_serial_code
-
-User = get_user_model()
 
 
 class DefaultHelpTextMixin:
@@ -198,7 +197,7 @@ class UserForeignKeyField(models.ForeignKey):
     """
 
     def __init__(self, verbose_name="关联的用户", to=None, on_delete=None, **kwargs):
-        to = to or User
+        to = to or settings.AUTH_USER_MODEL
         on_delete = on_delete or CASCADE
         kwargs.setdefault("db_constraint", False)
         kwargs.setdefault('help_text', verbose_name)
