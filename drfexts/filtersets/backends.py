@@ -249,6 +249,9 @@ class OrderingFilterBackend(OrderingFilter):
 
 
 class FullTextSearchFilter(SearchFilter):
+    """
+    Search filter that supports fulltext search
+    """
     search_vector = None
     search_query = None
 

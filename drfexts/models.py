@@ -29,6 +29,14 @@ class NotNull(Func):
     arity = 1
 
 
+class StatusQueryset(models.QuerySet):
+    def editable(self):
+        return self.exclude(status__in=[CommonStatus.DELETED, CommonStatus.INVALID])
+
+    def valid(self):
+        return self.filter(status__in=[CommonStatus.VALID, CommonStatus.PAUSED, CommonStatus.TO_INVALID])
+
+
 class BaseModel(models.Model):
     """
     标准抽象模型模型,可直接继承使用

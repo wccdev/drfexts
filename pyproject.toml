@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "drfexts"
-version = "0.10.2"
+version = "0.10.3"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
