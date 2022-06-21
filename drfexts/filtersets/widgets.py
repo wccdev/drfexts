@@ -75,11 +75,11 @@ class ExtendedDateRangeWidget(ExtendedRangeWidget):
 
 
 class LookupTextInput(TextInput):
-    suffix = "_equal"
+    suffix = "equal"
     default_lookup_expr = "icontains"
 
     def suffixed(self, name):
-        return name + self.suffix
+        return f"{name}_{self.suffix}"
 
     def value_from_datadict(self, data, files, name):
         """

@@ -178,9 +178,9 @@ class ExtGenericViewSet(GenericViewSet):
             # Ensure queryset is re-evaluated on each request.
             queryset = queryset.all()
             # Perform optimization on queryset
-            serilaizer_class = self.get_serializer_class()
-            if hasattr(serilaizer_class, self.queryset_function_name):
-                queryset = getattr(serilaizer_class, self.queryset_function_name)(queryset)
+            serializer_class = self.get_serializer_class()
+            if hasattr(serializer_class, self.queryset_function_name):
+                queryset = getattr(serializer_class, self.queryset_function_name)(self.request, queryset)
 
         return queryset
 

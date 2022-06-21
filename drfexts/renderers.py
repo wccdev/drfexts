@@ -86,28 +86,28 @@ class CustomJSONRenderer(BaseRenderer):
         :return: bytes() representation of the data encoded to UTF-8
         """
         if response := renderer_context.get('response'):
-            status_code = getattr(response, 'error_code', response.status_code)
-            response.status_code = status.HTTP_200_OK
-            playload = {
-                "ret": status_code,
-                "msg": "success",
-            }
+            payload = {}
+            if hasattr(renderer_context.get("request"), "id"):
+                payload["request_id"] = renderer_context["request"].id
+
+            payload["ret"] = response.status_code
+            payload["msg"] = "success"
 
             if data is not None:
-                playload["data"] = data
+                payload["data"] = data
 
-            if not is_success(status_code):
+            if not is_success(response.status_code):
                 try:
-                    playload["msg"] = data["detail"]
-                    playload.pop("data", None)
-                except Exception:
-                    playload["msg"] = "error"
-            else:
-                playload["ret"] = status.HTTP_200_OK
+                    payload["msg"] = data["detail"]
+                    payload.pop("data", None)
+                except KeyError:
+                    payload["msg"] = "error"
+
+            response.status_code = status.HTTP_200_OK  # Set all response status to HTTP 200
         elif data is None:
             return b""
         else:
-            playload = data
+            payload = data
 
         # If `indent` is provided in the context, then pretty print the result.
         # E.g. If we're being called by RestFramework's BrowsableAPIRenderer.
@@ -115,7 +115,8 @@ class CustomJSONRenderer(BaseRenderer):
         if media_type == self.html_media_type:
             options |= orjson.OPT_INDENT_2
 
-        serialized: bytes = orjson.dumps(playload, default=self.default, option=options)
+        response._rendered_data = payload  # for loging response use
+        serialized: bytes = orjson.dumps(payload, default=self.default, option=options)
         return serialized
 
 

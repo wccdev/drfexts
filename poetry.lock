@@ -21,6 +21,14 @@ python-versions = "*"
 testing = ["pytest", "pytest-cov"]
 
 [[package]]
+name = "conditions"
+version = "0.2.0"
+description = "Implementation of the Common Lisp's conditions system in Python."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "django"
 version = "3.2.13"
 description = "A high-level Python Web framework that encourages rapid development and clean, pragmatic design."
@@ -188,7 +196,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8"
-content-hash = "55434436501c1f4aa92dee13ab5831a5e8d89b43c9e27dd0a721ebe7d62802e2"
+content-hash = "b25ea7b2d02738cd088fed445e5bebb2b6e5a9a0865a3760ceadf2541c95e3e6"
 
 [metadata.files]
 asgiref = [
@@ -198,6 +206,9 @@ asgiref = [
 char = [
     {file = "char-0.1.2-py2.py3-none-any.whl", hash = "sha256:e2719f713a62134657f51da07ebc6e5c2acb11862f65b8be14e6b596fa345e80"},
     {file = "char-0.1.2.tar.gz", hash = "sha256:e6020cf4c81e43484e0b0a1d5d0668a5e56dfff4dadea24629d92a2a3934c79a"},
+]
+conditions = [
+    {file = "conditions-0.2.0.tar.gz", hash = "sha256:7c6fbf49abcbe8be3654b688591fc37c7545cd8c5bd4a93ad8caff661f485cc1"},
 ]
 django = [
     {file = "Django-3.2.13-py3-none-any.whl", hash = "sha256:b896ca61edc079eb6bbaa15cf6071eb69d6aac08cce5211583cfb41515644fdf"},

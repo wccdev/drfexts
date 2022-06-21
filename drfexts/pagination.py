@@ -11,13 +11,17 @@ from .paginators import WithoutCountPaginator
 
 class CustomPagination(pagination.PageNumberPagination):
     page_size_query_param = "page_size"
-    max_page_size = 500
+    max_page_size = 5000
 
     def paginate_queryset(self, queryset, request, view=None):
         page_num = request.query_params.get(self.page_query_param)
         # 判断，如果 page 为all 则取消分页返回所有
         if page_num == 'all':
-            return None
+            request.query_params._mutable = True
+            request.query_params[self.page_query_param] = 1
+            request.query_params[self.page_size_query_param] = self.max_page_size
+            request.query_params._mutable = False
+
         return super().paginate_queryset(queryset, request, view)
 
     def get_paginated_response(self, data):
