@@ -101,7 +101,7 @@ class CustomJSONRenderer(BaseRenderer):
                     payload["msg"] = data["detail"]
                     payload.pop("data", None)
                 except KeyError:
-                    payload["msg"] = "error"
+                    payload["msg"] = "Invalid input."
 
             response.status_code = status.HTTP_200_OK  # Set all response status to HTTP 200
         elif data is None:

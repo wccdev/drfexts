@@ -11,7 +11,8 @@ from .fields import (
     StatusField,
     DefaultCodeField,
     AuditStatusField,
-    CreatedByField, UpdatedByField,
+    CreatedByField,
+    UpdatedByField,
 )
 
 User = get_user_model()
@@ -30,11 +31,15 @@ class NotNull(Func):
 
 
 class StatusQueryset(models.QuerySet):
+
     def editable(self):
         return self.exclude(status__in=[CommonStatus.DELETED, CommonStatus.INVALID])
 
-    def valid(self):
+    def active(self):
         return self.filter(status__in=[CommonStatus.VALID, CommonStatus.PAUSED, CommonStatus.TO_INVALID])
+
+    def valid(self):
+        return self.filter(status__in=CommonStatus.VALID)
 
 
 class BaseModel(models.Model):
@@ -46,7 +51,7 @@ class BaseModel(models.Model):
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
-    objects = models.Manager()
+    objects = StatusQueryset.as_manager()
 
     class Meta:
         abstract = True
@@ -63,7 +68,7 @@ class BaseCodeModel(models.Model):
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
-    objects = models.Manager()
+    objects = StatusQueryset.as_manager()
 
     class Meta:
         abstract = True
@@ -81,6 +86,8 @@ class BaseCreatorModel(models.Model):
     updated_by = UpdatedByField()  # 修改者
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
+
+    objects = StatusQueryset.as_manager()
 
     class Meta:
         abstract = True
@@ -112,6 +119,8 @@ class AuditModel(models.Model):
     updated_by = UpdatedByField()  # 修改者
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
+
+    objects = StatusQueryset.as_manager()
 
     class Meta:
         abstract = True
