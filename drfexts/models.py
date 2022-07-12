@@ -30,7 +30,7 @@ class NotNull(Func):
     arity = 1
 
 
-class StatusQueryset(models.QuerySet):
+class StatusQuerySet(models.QuerySet):
 
     def editable(self):
         return self.exclude(status__in=[CommonStatus.DELETED, CommonStatus.INVALID])
@@ -39,7 +39,7 @@ class StatusQueryset(models.QuerySet):
         return self.filter(status__in=[CommonStatus.VALID, CommonStatus.PAUSED, CommonStatus.TO_INVALID])
 
     def valid(self):
-        return self.filter(status__in=CommonStatus.VALID)
+        return self.filter(status=CommonStatus.VALID)
 
 
 class BaseModel(models.Model):
@@ -51,7 +51,7 @@ class BaseModel(models.Model):
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
-    objects = StatusQueryset.as_manager()
+    objects = StatusQuerySet.as_manager()
 
     class Meta:
         abstract = True
@@ -68,7 +68,7 @@ class BaseCodeModel(models.Model):
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
-    objects = StatusQueryset.as_manager()
+    objects = StatusQuerySet.as_manager()
 
     class Meta:
         abstract = True
@@ -87,7 +87,7 @@ class BaseCreatorModel(models.Model):
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
-    objects = StatusQueryset.as_manager()
+    objects = StatusQuerySet.as_manager()
 
     class Meta:
         abstract = True
@@ -120,7 +120,7 @@ class AuditModel(models.Model):
     updated_at = UpdatedAtField()  # 修改时间
     created_at = CreatedAtField()  # 创建时间
 
-    objects = StatusQueryset.as_manager()
+    objects = StatusQuerySet.as_manager()
 
     class Meta:
         abstract = True

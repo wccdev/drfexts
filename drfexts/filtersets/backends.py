@@ -107,8 +107,6 @@ class AutoFilterBackend(DjangoFilterBackend):
         filterset_class = getattr(view, 'filterset_class', None)
         filterset_fields_overwrite = getattr(view, 'filterset_fields_overwrite', {})
 
-        # full text search
-
         if filterset_class:
             filterset_model = filterset_class._meta.model  # noqa
 
@@ -131,42 +129,52 @@ class AutoFilterBackend(DjangoFilterBackend):
         overwrite_fields = {k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, Filter)}
         overwrite_kwargs = {k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, dict)}
 
-        for filter_name, field in serializer.fields.items():
-            if (
-                getattr(field, "write_only", False)
-                or field.source == "*"
-                or isinstance(field, serializers.BaseSerializer)
-            ):
-                continue
+        def filters_from_serializer(_serializer, field_name_prefix='', filter_name_prefix=''):
+            if isinstance(_serializer, serializers.ListSerializer):
+                _serializer = _serializer.child
 
-            field_name = field.source.replace(".", "__") or filter_name
-            if get_model_field(filterset_model, field_name) is None and (
-                queryset is not None and filter_name not in queryset.query.annotations
-            ):
-                continue
+            for filter_name, field in _serializer.fields.items():
+                if getattr(field, "write_only", False) or field.source == "*":
+                    continue
 
-            try:
-                filter_spec = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field]
-            except KeyError:
-                warnings.warn(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
-                continue
+                field_name = field.source.replace(".", "__") or filter_name
+                if field_name_prefix:
+                    field_name = field_name_prefix + "__" + field_name
 
-            extra = filter_spec.get("extra")
-            kwargs = {"field_name": field_name, "label": field.label, "help_text": field.help_text}
-            if callable(extra):
-                kwargs.update(extra(field))
+                if filter_name_prefix:
+                    filter_name = filter_name_prefix + "." + filter_name
 
-            if "queryset" in kwargs and kwargs["queryset"] is None:
-                warnings.warn(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
-                continue
+                if get_model_field(filterset_model, field_name) is None and (
+                    queryset is not None and filter_name not in queryset.query.annotations
+                ):
+                    continue
 
-            overwrite_value = overwrite_kwargs.get(filter_name)
-            if overwrite_value:
-                kwargs.update(overwrite_value)
+                if isinstance(field, serializers.BaseSerializer):
+                    filters_from_serializer(field, field_name_prefix=field_name, filter_name_prefix=filter_name)
 
-            filterset_field = filter_spec["filter_class"](**kwargs)
-            filterset_fields[filter_name] = filterset_field
+                try:
+                    filter_spec = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field]
+                except KeyError:
+                    warnings.warn(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
+                    continue
 
+                extra = filter_spec.get("extra")
+                kwargs = {"field_name": field_name, "label": field.label, "help_text": field.help_text}
+                if callable(extra):
+                    kwargs.update(extra(field))
+
+                if "queryset" in kwargs and kwargs["queryset"] is None:
+                    warnings.warn(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
+                    continue
+
+                overwrite_value = overwrite_kwargs.get(filter_name)
+                if overwrite_value:
+                    kwargs.update(overwrite_value)
+
+                filterset_field = filter_spec["filter_class"](**kwargs)
+                filterset_fields[filter_name] = filterset_field
+
+        filters_from_serializer(serializer)
         filterset_fields.update(overwrite_fields)
 
         AutoFilterSet = type("AutoFilterSet", (self.filterset_base,), filterset_fields)  # noqa
@@ -252,6 +260,7 @@ class FullTextSearchFilter(SearchFilter):
     """
     Search filter that supports fulltext search
     """
+
     search_vector = None
     search_query = None
 

@@ -1,6 +1,47 @@
+[tool.black]
+line-length = 89
+target-version = ['py38', 'py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+
+  # The following are specific to Black, you probably don't want those.
+  | blib2to3
+  | tests/data
+  | profiling
+)/
+'''
+
+[tool.isort]
+profile = "black"
+known_first_party = ["scf", "config"]
+default_section = "THIRDPARTY"
+skip = ["venv/", ".venv/"]
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+
+[tool.commitizen]
+version = "0.13.0"
+tag_format = "v$major.$minor.$patch$prerelease"
+version_files = [
+    "pyproject.toml:version",
+    "__init__.py"
+]
+
 [tool.poetry]
 name = "drfexts"
-version = "0.10.7"
+version = "0.13.0"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -29,6 +70,13 @@ conditions = "^0.2.0"
 
 [tool.poetry.dev-dependencies]
 #pytest = "^4.0"
+flake8 = "^4.0.1"
+flake8-isort = "^4.1.1"
+coverage = "^6.2"
+black = "^22.3.0"
+pylint-django = "^2.5.0"
+pre-commit = "^2.16.0"
+commitizen = "^2.28.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

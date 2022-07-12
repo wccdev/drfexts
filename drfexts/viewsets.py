@@ -121,13 +121,7 @@ class ExtGenericViewSet(GenericViewSet):
 
     def get_serializer_class(self):
         """
-        Return the class to use for the serializer.
-        Defaults to using `self.serializer_class`.
-
-        You may want to override this if you need to provide different
-        serializations depending on the incoming request.
-
-        (Eg. admins get full serialization, others get basic serialization)
+        支持针对不同action指定不同的序列化器
         """
         assert self.serializer_class is not None, (
                 "'%s' should either include a `serializer_class` attribute, "
@@ -143,6 +137,19 @@ class ExtGenericViewSet(GenericViewSet):
                 return self.serializer_class.get(self._default_key)
 
         return self.serializer_class
+
+    def get_serializer(self, *args, **kwargs):
+        """
+        支持动态设置序列化器字段
+        """
+        serializer_class = self.get_serializer_class()
+        if hasattr(serializer_class, "get_dynamic_fields") and callable(serializer_class.get_dynamic_fields):
+            dynamic_fields = serializer_class.get_dynamic_fields(self.request)
+            if dynamic_fields:
+                kwargs["fields"] = dynamic_fields
+
+        kwargs.setdefault('context', self.get_serializer_context())
+        return serializer_class(*args, **kwargs)
 
     def data_permissions(self, request, view, queryset):
         """
