@@ -143,10 +143,15 @@ class ExtGenericViewSet(GenericViewSet):
         支持动态设置序列化器字段
         """
         serializer_class = self.get_serializer_class()
-        if hasattr(serializer_class, "get_dynamic_fields") and callable(serializer_class.get_dynamic_fields):
-            dynamic_fields = serializer_class.get_dynamic_fields(self.request)
-            if dynamic_fields:
-                kwargs["fields"] = dynamic_fields
+        if hasattr(serializer_class, "get_included_fields") and callable(serializer_class.get_included_fields):
+            included_fields = serializer_class.get_included_fields(self.request)
+            if included_fields:
+                kwargs["fields"] = included_fields
+
+        if hasattr(serializer_class, "get_excluded_fields") and callable(serializer_class.get_excluded_fields):
+            excluded_fields = serializer_class.get_excluded_fields(self.request)
+            if excluded_fields:
+                kwargs["omit"] = excluded_fields
 
         kwargs.setdefault('context', self.get_serializer_context())
         return serializer_class(*args, **kwargs)
