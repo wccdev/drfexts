@@ -32,7 +32,7 @@ force_grid_wrap = 0
 use_parentheses = true
 
 [tool.commitizen]
-version = "0.14.0"
+version = "0.15.0"
 tag_format = "v$major.$minor.$patch$prerelease"
 version_files = [
     "pyproject.toml:version",
@@ -41,7 +41,7 @@ version_files = [
 
 [tool.poetry]
 name = "drfexts"
-version = "0.14.0"
+version = "0.15.0"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]

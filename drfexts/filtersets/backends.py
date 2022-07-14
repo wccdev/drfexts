@@ -177,7 +177,11 @@ class AutoFilterBackend(DjangoFilterBackend):
         filters_from_serializer(serializer)
         filterset_fields.update(overwrite_fields)
 
-        AutoFilterSet = type("AutoFilterSet", (self.filterset_base,), filterset_fields)  # noqa
+        base_classes = (self.filterset_base,)
+        if hasattr(view, 'filterset_base_classes'):
+            base_classes += base_classes
+
+        AutoFilterSet = type("AutoFilterSet", base_classes, filterset_fields)  # noqa
         return AutoFilterSet
 
 
