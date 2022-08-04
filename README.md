@@ -105,7 +105,6 @@ see the [API
 Guide](http://django-rest-framework.org/api-guide/renderers/) or the
 [Tutorial](http://django-rest-framework.org/tutorial/1-serialization/).
 
-
 Running the tests
 -----------------
 
