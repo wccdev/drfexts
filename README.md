@@ -118,6 +118,7 @@ $ ./manage.py test
 1.0.0
 -----
 
+
 -   Initial release
 
 ## Thanks
