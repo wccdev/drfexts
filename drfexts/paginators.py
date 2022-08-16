@@ -1,4 +1,4 @@
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.translation import gettext_lazy as _
 
 
@@ -18,7 +18,7 @@ class WithoutCountPaginator(Paginator):
         top_with_extra = top + 1
         object_with_extra = list(self.object_list[bottom:top_with_extra])
         if not object_with_extra:
-            raise EmptyPage(_('That page contains no results'))
+            raise EmptyPage(_("That page contains no results"))
         if len(object_with_extra) >= self.per_page:
             object_with_extra = object_with_extra[:-1]
             self.has_next_page = True
@@ -37,9 +37,7 @@ class WithoutCountPaginator(Paginator):
                 raise ValueError
             number = int(number)
         except (TypeError, ValueError):
-            raise PageNotAnInteger(_('That page number is not an integer'))
+            raise PageNotAnInteger(_("That page number is not an integer"))
         if number < 1:
-            raise EmptyPage(_('That page number is less than 1'))
+            raise EmptyPage(_("That page number is less than 1"))
         return number
-
-

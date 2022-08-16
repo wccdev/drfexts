@@ -1,17 +1,18 @@
 from itertools import chain
 
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Func, fields
-from django.contrib.auth import get_user_model
+
 from .constants import CommonStatus
 from .fields import (
-    AutoUUIDField,
-    UpdatedAtField,
-    CreatedAtField,
-    StatusField,
-    DefaultCodeField,
     AuditStatusField,
+    AutoUUIDField,
+    CreatedAtField,
     CreatedByField,
+    DefaultCodeField,
+    StatusField,
+    UpdatedAtField,
     UpdatedByField,
 )
 
@@ -19,24 +20,25 @@ User = get_user_model()
 
 
 class IsNull(Func):
-    template = '%(expressions)s IS NULL'
+    template = "%(expressions)s IS NULL"
     output_field = fields.BooleanField()
     arity = 1
 
 
 class NotNull(Func):
-    template = '%(expressions)s IS NOT NULL'
+    template = "%(expressions)s IS NOT NULL"
     output_field = fields.BooleanField()
     arity = 1
 
 
 class StatusQuerySet(models.QuerySet):
-
     def editable(self):
         return self.exclude(status__in=[CommonStatus.DELETED, CommonStatus.INVALID])
 
     def active(self):
-        return self.filter(status__in=[CommonStatus.VALID, CommonStatus.PAUSED, CommonStatus.TO_INVALID])
+        return self.filter(
+            status__in=[CommonStatus.VALID, CommonStatus.PAUSED, CommonStatus.TO_INVALID]
+        )
 
     def valid(self):
         return self.filter(status=CommonStatus.VALID)
@@ -55,7 +57,7 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
-        verbose_name = '基本模型'
+        verbose_name = "基本模型"
 
 
 class BaseCodeModel(models.Model):
@@ -72,7 +74,7 @@ class BaseCodeModel(models.Model):
 
     class Meta:
         abstract = True
-        verbose_name = '基本模型(code)'
+        verbose_name = "基本模型(code)"
 
 
 class BaseCreatorModel(models.Model):
@@ -104,7 +106,7 @@ class UUIDModel(BaseModel):
 
     class Meta:
         abstract = True
-        verbose_name = 'UUID模型'
+        verbose_name = "UUID模型"
 
 
 class AuditModel(models.Model):
@@ -124,7 +126,7 @@ class AuditModel(models.Model):
 
     class Meta:
         abstract = True
-        verbose_name = '审核模型'
+        verbose_name = "审核模型"
 
 
 class ToDictModelMixin:  # noqa
@@ -147,7 +149,9 @@ class ToDictModelMixin:  # noqa
         opts = self._meta  # noqa
         fields_map = fields_map or {}
         data = {}
-        assert not all([fields, exclude]), "Cannot set both 'fields' and 'exclude' options."
+        assert not all(
+            [fields, exclude]
+        ), "Cannot set both 'fields' and 'exclude' options."
         for f in chain(opts.concrete_fields, opts.private_fields):
             if fields and f.name not in fields:
                 continue
@@ -156,7 +160,7 @@ class ToDictModelMixin:  # noqa
 
             field_name = fields_map.get(f.name, f.name)
             if convert_choice and f.choices:
-                data[field_name] = getattr(self, f'get_{f.name}_display')()
+                data[field_name] = getattr(self, f"get_{f.name}_display")()
             else:
                 data[field_name] = f.value_from_object(self)
 

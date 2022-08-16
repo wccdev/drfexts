@@ -1,10 +1,16 @@
 import collections
 
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
-from rest_framework.relations import RelatedField
-from rest_framework.fields import Field, ChoiceField, to_choices_dict, flatten_choices_dict
+from rest_framework.fields import (
+    ChoiceField,
+    Field,
+    flatten_choices_dict,
+    get_attribute,
+    to_choices_dict,
+)
+from rest_framework.relations import PrimaryKeyRelatedField, RelatedField
 
 __all__ = (
     "SequenceField",
@@ -12,6 +18,7 @@ __all__ = (
     "MultiSlugRelatedField",
     "IsNullField",
     "IsNotNullField",
+    "ComplexPKRelatedField",
 )
 
 
@@ -20,13 +27,13 @@ class SequenceField(Field):
     A read-only field that output increasing number started from zero.
     """
 
-    cached_attr_name = '_curval'
+    cached_attr_name = "_curval"
 
     def __init__(self, start=1, step=1, **kwargs):
         self.start = start
         self.step = step
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
+        kwargs["source"] = "*"
+        kwargs["read_only"] = True
         super().__init__(**kwargs)
 
     def _incr(self):
@@ -43,8 +50,9 @@ class DisplayChoiceField(ChoiceField):
     Serialize: convert value into choice strings
     Deserialize: convert choice strings into value
     """
+
     def to_representation(self, value):
-        if value in ('', None):
+        if value in ("", None):
             return value
         return self.value_to_display_strings.get(str(value), value)
 
@@ -73,31 +81,36 @@ class MultiSlugRelatedField(RelatedField):
     """
 
     default_error_messages = {
-        'does_not_exist': _("Object with {error_msg} does not exist."),
-        'invalid': _('Invalid value.'),
+        "does_not_exist": _("Object with {error_msg} does not exist."),
+        "invalid": _("Invalid value."),
     }
 
     def __init__(self, slug_fields=None, **kwargs):
-        assert slug_fields is not None, 'The `slug_fields` argument is required.'
+        assert slug_fields is not None, "The `slug_fields` argument is required."
         self.slug_fields = slug_fields
         super().__init__(**kwargs)
 
     def to_internal_value(self, data):
         if not isinstance(data, collections.Mapping):
-            self.fail('invalid')
+            self.fail("invalid")
         if not set(data.keys()) == set(self.slug_fields):
-            self.fail('invalid')
+            self.fail("invalid")
         try:
             instance = self.get_queryset().get(**data)
             return instance
         except ObjectDoesNotExist:
-            lookups = ['='.join((lookup, value)) for lookup, value in data.items()]
-            self.fail('does_not_exist', error_msg=' '.join(lookups))
+            lookups = ["=".join((lookup, value)) for lookup, value in data.items()]
+            self.fail("does_not_exist", error_msg=" ".join(lookups))
         except (TypeError, ValueError):
-            self.fail('invalid')
+            self.fail("invalid")
 
     def to_representation(self, value):
-        return dict(zip(self.slug_fields, (getattr(value, slug_field) for slug_field in self.slug_fields)))
+        return dict(
+            zip(
+                self.slug_fields,
+                (getattr(value, slug_field) for slug_field in self.slug_fields),
+            )
+        )
 
 
 class StringListField(serializers.ListField):
@@ -109,15 +122,42 @@ class IntegerListField(serializers.ListField):
 
 
 class IsNullField(serializers.ReadOnlyField):
-    default_error_messages = {
-        'invalid': _('Must be a valid boolean.')
-    }
+    default_error_messages = {"invalid": _("Must be a valid boolean.")}
 
     def to_representation(self, value):
         return value is None
 
 
 class IsNotNullField(IsNullField):
-
     def to_representation(self, value):
         return value is not None
+
+
+class ComplexPKRelatedField(PrimaryKeyRelatedField):
+    def __init__(self, pk_field_name="id", display_field="name", **kwargs):
+        self.pk_field_name = pk_field_name
+        self.display_field = display_field
+        self.instance = None
+        super().__init__(**kwargs)
+
+    def get_attribute(self, instance):
+        self.instance = instance
+        # Standard case, return the object instance.
+        return super().get_attribute(instance)
+
+    def to_internal_value(self, data):
+        try:
+            data = data[self.pk_field_name]
+        except TypeError:
+            pass
+
+        return super().to_internal_value(data)
+
+    def to_representation(self, value):
+        try:
+            attr_obj = get_attribute(self.instance, self.source_attrs)
+            label = getattr(attr_obj, self.display_field, str(attr_obj))
+        except AttributeError:
+            label = str(value)
+
+        return {self.pk_field_name: super().to_representation(value), "label": label}

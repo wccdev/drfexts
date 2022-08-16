@@ -7,12 +7,13 @@ from datetime import datetime
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.transaction import atomic
 from django.utils import timezone
+from rest_framework import serializers
 
 
 class CustomEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
-            return obj.strftime('%Y-%m-%d %H:%M:%S')
+            return obj.strftime("%Y-%m-%d %H:%M:%S")
 
         return super().default(obj)
 
@@ -43,9 +44,9 @@ def strtobool(val):
     'val' is anything else.
     """
     val = val.lower()
-    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+    if val in ("y", "yes", "t", "true", "on", "1"):
         return True
-    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+    elif val in ("n", "no", "f", "false", "off", "0"):
         return False
     else:
         raise ValueError("invalid truth value %r" % (val,))
@@ -64,3 +65,32 @@ def to_table_choices(choices: OrderedDict):
     转换为前端适配的options
     """
     return [{"label": label, "value": value} for value, label in choices.items()]
+
+
+def get_field_info(field):
+    """
+    序列化器字段提取信息
+    :param field:
+    :return:
+    """
+    field_info = {"column_name": str(field.label)}
+    if isinstance(field, serializers.ChoiceField) and getattr(field, "choices", None):
+        field_info["choices"] = dict(field.choices)
+
+    return field_info
+
+
+def get_serializer_field(serializer, field_path):
+    """
+    获取序列化器中的字段
+    """
+    attrs = field_path.split(".")
+    for attr in attrs:
+        try:
+            serializer = serializer.fields[attr]
+        except AttributeError:
+            break
+        except KeyError:
+            raise ValueError(f"无效导出字段: {field_path}")
+
+    return serializer

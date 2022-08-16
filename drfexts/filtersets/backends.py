@@ -1,77 +1,88 @@
 import warnings
 
-from django.contrib.postgres.search import SearchVector, SearchQuery
+from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.core.exceptions import ImproperlyConfigured
-from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.filters import (
-    Filter,
     BooleanFilter,
     CharFilter,
+    Filter,
     TimeFilter,
     UUIDFilter,
 )
+from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.utils import get_model_field
 from rest_framework import serializers
-from rest_framework.utils.field_mapping import ClassLookupDict
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.utils.field_mapping import ClassLookupDict
+
+from ..serializers.fields import DisplayChoiceField, IsNotNullField, IsNullField
 from .filters import (
-    IsNullFilter,
-    IsNotNullFilter,
+    ExtendedCharFilter,
+    ExtendedDateFromToRangeFilter,
+    ExtendedDisplayMultipleChoiceFilter,
+    ExtendedModelMultipleChoiceFilter,
     ExtendedMultipleChoiceFilter,
     ExtendedNumberFilter,
+    IsNotNullFilter,
+    IsNullFilter,
     MultipleSelectFilter,
-    ExtendedDateFromToRangeFilter,
-    ExtendedModelMultipleChoiceFilter,
-    ExtendedCharFilter,
-    ExtendedDisplayMultipleChoiceFilter,
 )
-from ..serializers.fields import IsNotNullField, IsNullField, DisplayChoiceField
 
 BOOLEAN_CHOICES = (
-    ('false', 'False'),
-    ('true', 'True'),
+    ("false", "False"),
+    ("true", "True"),
 )
 
 FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
     {
-        serializers.IntegerField: {'filter_class': ExtendedNumberFilter},
-        serializers.DateField: {'filter_class': ExtendedDateFromToRangeFilter},
-        serializers.DateTimeField: {'filter_class': ExtendedDateFromToRangeFilter},
-        serializers.TimeField: {'filter_class': TimeFilter},
-        serializers.DecimalField: {'filter_class': ExtendedNumberFilter},
-        serializers.FloatField: {'filter_class': ExtendedNumberFilter},
-        serializers.BooleanField: {'filter_class': BooleanFilter},
-        serializers.EmailField: {'filter_class': CharFilter},
-        serializers.FileField: {'filter_class': CharFilter},
-        serializers.URLField: {'filter_class': CharFilter},
-        serializers.UUIDField: {'filter_class': UUIDFilter},
+        serializers.IntegerField: {"filter_class": ExtendedNumberFilter},
+        serializers.DateField: {"filter_class": ExtendedDateFromToRangeFilter},
+        serializers.DateTimeField: {"filter_class": ExtendedDateFromToRangeFilter},
+        serializers.TimeField: {"filter_class": TimeFilter},
+        serializers.DecimalField: {"filter_class": ExtendedNumberFilter},
+        serializers.FloatField: {"filter_class": ExtendedNumberFilter},
+        serializers.BooleanField: {"filter_class": BooleanFilter},
+        serializers.EmailField: {"filter_class": CharFilter},
+        serializers.FileField: {"filter_class": CharFilter},
+        serializers.URLField: {"filter_class": CharFilter},
+        serializers.UUIDField: {"filter_class": UUIDFilter},
         serializers.PrimaryKeyRelatedField: {
-            'filter_class': ExtendedModelMultipleChoiceFilter,
-            'extra': lambda f: {"queryset": f.queryset, "distinct": False},
+            "filter_class": ExtendedModelMultipleChoiceFilter,
+            "extra": lambda f: {"queryset": f.queryset, "distinct": False},
         },
         serializers.SlugRelatedField: {
-            'filter_class': ExtendedModelMultipleChoiceFilter,
-            'extra': lambda f: {"queryset": f.queryset, "to_field_name": f.slug_field, "distinct": False},
+            "filter_class": ExtendedModelMultipleChoiceFilter,
+            "extra": lambda f: {
+                "queryset": f.queryset,
+                "to_field_name": f.slug_field,
+                "distinct": False,
+            },
         },
         serializers.ManyRelatedField: {
-            'filter_class': ExtendedModelMultipleChoiceFilter,
-            'extra': lambda f: {"queryset": f.child_relation.queryset},
+            "filter_class": ExtendedModelMultipleChoiceFilter,
+            "extra": lambda f: {"queryset": f.child_relation.queryset},
         },
-        serializers.RelatedField: {'filter_class': MultipleSelectFilter},
-        serializers.JSONField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "icontains"}},
-        serializers.ListField: {'filter_class': CharFilter, 'extra': lambda f: {"lookup_expr": "contains"}},
-        IsNotNullField: {'filter_class': IsNotNullFilter},
-        IsNullField: {'filter_class': IsNullFilter},
-        serializers.ReadOnlyField: {'filter_class': CharFilter},
+        serializers.RelatedField: {"filter_class": MultipleSelectFilter},
+        serializers.JSONField: {
+            "filter_class": CharFilter,
+            "extra": lambda f: {"lookup_expr": "icontains"},
+        },
+        serializers.ListField: {
+            "filter_class": CharFilter,
+            "extra": lambda f: {"lookup_expr": "contains"},
+        },
+        IsNotNullField: {"filter_class": IsNotNullFilter},
+        IsNullField: {"filter_class": IsNullFilter},
+        serializers.ReadOnlyField: {"filter_class": CharFilter},
         DisplayChoiceField: {
-            'filter_class': ExtendedDisplayMultipleChoiceFilter,
-            'extra': lambda f: {"choices": list(f.choices.items()), 'distinct': False},
+            "filter_class": ExtendedDisplayMultipleChoiceFilter,
+            "extra": lambda f: {"choices": list(f.choices.items()), "distinct": False},
         },
         serializers.ChoiceField: {
-            'filter_class': ExtendedMultipleChoiceFilter,
-            'extra': lambda f: {"choices": list(f.choices.items()), "distinct": False},
+            "filter_class": ExtendedMultipleChoiceFilter,
+            "extra": lambda f: {"choices": list(f.choices.items()), "distinct": False},
         },
-        serializers.CharField: {'filter_class': ExtendedCharFilter},
+        serializers.CharField: {"filter_class": ExtendedCharFilter},
     }
 )
 
@@ -84,7 +95,7 @@ class InitialFilterSet(filterset.FilterSet):
             data = data.copy()
 
             for name, f in self.base_filters.items():
-                initial = f.extra.get('initial')
+                initial = f.extra.get("initial")
 
                 # filter param is either missing or empty, use initial as default
                 if not data.get(name) and initial:
@@ -104,8 +115,8 @@ class AutoFilterBackend(DjangoFilterBackend):
         """
         Return the `FilterSet` class used to filter the queryset.
         """
-        filterset_class = getattr(view, 'filterset_class', None)
-        filterset_fields_overwrite = getattr(view, 'filterset_fields_overwrite', {})
+        filterset_class = getattr(view, "filterset_class", None)
+        filterset_fields_overwrite = getattr(view, "filterset_fields_overwrite", {})
 
         if filterset_class:
             filterset_model = filterset_class._meta.model  # noqa
@@ -114,7 +125,10 @@ class AutoFilterBackend(DjangoFilterBackend):
             if filterset_model and queryset is not None:
                 assert issubclass(
                     queryset.model, filterset_model
-                ), 'FilterSet model %s does not match queryset model %s' % (filterset_model, queryset.model)
+                ), "FilterSet model %s does not match queryset model %s" % (
+                    filterset_model,
+                    queryset.model,
+                )
 
             return filterset_class
 
@@ -126,10 +140,16 @@ class AutoFilterBackend(DjangoFilterBackend):
         filterset_model = serializer.Meta.model  # noqa
         filterset_fields = {}
 
-        overwrite_fields = {k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, Filter)}
-        overwrite_kwargs = {k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, dict)}
+        overwrite_fields = {
+            k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, Filter)
+        }
+        overwrite_kwargs = {
+            k: v for k, v in filterset_fields_overwrite.items() if isinstance(v, dict)
+        }
 
-        def filters_from_serializer(_serializer, field_name_prefix='', filter_name_prefix=''):
+        def filters_from_serializer(
+            _serializer, field_name_prefix="", filter_name_prefix=""
+        ):
             if isinstance(_serializer, serializers.ListSerializer):
                 _serializer = _serializer.child
 
@@ -145,12 +165,17 @@ class AutoFilterBackend(DjangoFilterBackend):
                     filter_name = filter_name_prefix + "." + filter_name
 
                 if get_model_field(filterset_model, field_name) is None and (
-                    queryset is not None and filter_name not in queryset.query.annotations
+                    queryset is not None
+                    and filter_name not in queryset.query.annotations
                 ):
                     continue
 
                 if isinstance(field, serializers.BaseSerializer):
-                    filters_from_serializer(field, field_name_prefix=field_name, filter_name_prefix=filter_name)
+                    filters_from_serializer(
+                        field,
+                        field_name_prefix=field_name,
+                        filter_name_prefix=filter_name,
+                    )
 
                 try:
                     filter_spec = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field]
@@ -159,7 +184,11 @@ class AutoFilterBackend(DjangoFilterBackend):
                     continue
 
                 extra = filter_spec.get("extra")
-                kwargs = {"field_name": field_name, "label": field.label, "help_text": field.help_text}
+                kwargs = {
+                    "field_name": field_name,
+                    "label": field.label,
+                    "help_text": field.help_text,
+                }
                 if callable(extra):
                     kwargs.update(extra(field))
 
@@ -178,8 +207,8 @@ class AutoFilterBackend(DjangoFilterBackend):
         filterset_fields.update(overwrite_fields)
 
         base_classes = (self.filterset_base,)
-        if hasattr(view, 'filterset_base_classes'):
-            base_classes += base_classes
+        if hasattr(view, "filterset_base_classes"):
+            base_classes = view.filterset_base_classes + base_classes
 
         AutoFilterSet = type("AutoFilterSet", base_classes, filterset_fields)  # noqa
         return AutoFilterSet
@@ -251,7 +280,11 @@ class OrderingFilterBackend(OrderingFilter):
             prefix = "-" if field_name.startswith("-") else ""
             field_name = field_name.lstrip("-")
             field = default_fields.get(field_name)
-            if field and not getattr(field, "write_only", False) and not field.source == "*":
+            if (
+                field
+                and not getattr(field, "write_only", False)
+                and not field.source == "*"
+            ):
                 fixed_name = field.source.replace(".", "__")
                 fixed_fields.append(prefix + (fixed_name or field_name))
             else:
@@ -276,11 +309,13 @@ class FullTextSearchFilter(SearchFilter):
         elif self.search_vector is None:
             return
 
-        raise ImproperlyConfigured("`search_vector` must be type of list, tuple or 'SearchVector' instance.")
+        raise ImproperlyConfigured(
+            "`search_vector` must be type of list, tuple or 'SearchVector' instance."
+        )
 
     def get_search_query(self, search_terms):
         if self.search_query is None:
-            return SearchQuery(' '.join(search_terms))
+            return SearchQuery(" ".join(search_terms))
         elif isinstance(self.search_query, SearchQuery):
             return self.search_query
 

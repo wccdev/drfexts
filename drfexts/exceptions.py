@@ -6,13 +6,13 @@ import traceback
 from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
-from rest_framework.views import set_rollback, exception_handler
+from rest_framework.views import exception_handler, set_rollback
 
 
 def _get_detail(detail):
     if isinstance(detail, list):
-        return ''.join([x if isinstance(x, str) else _get_detail(x) for x in detail])
-    result = ''
+        return "".join([x if isinstance(x, str) else _get_detail(x) for x in detail])
+    result = ""
     for v in detail.values():
         result += _get_detail(v)
     return result
