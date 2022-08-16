@@ -1,0 +1,98 @@
+import json
+from collections import OrderedDict
+from functools import cached_property
+
+from rest_flex_fields.serializers import FlexFieldsSerializerMixin
+from rest_framework.fields import BooleanField, ChoiceField, SkipField
+from rest_framework.relations import PKOnlyObject
+from rest_framework.serializers import BaseSerializer, ListSerializer, ModelSerializer
+
+from ..utils import get_serializer_field
+from .fields import ComplexPKRelatedField
+
+
+class WCCModelSerializer(FlexFieldsSerializerMixin, ModelSerializer):
+    serializer_related_field = ComplexPKRelatedField
+
+
+class ExportSerializerMixin:
+    @cached_property
+    def _export_info(self):
+        if self.context["request"].query_params.get("fields"):
+            fields = self.context["request"].query_params["fields"].split(",")
+        else:
+            fields = []
+
+        fields_map = json.loads(
+            self.context["request"].query_params.get("fields_map", "{}")
+        )
+        return fields, fields_map
+
+    @property
+    def export_fields(self):
+        """
+        获取导出字段
+        :return:
+        """
+        field_names, fields_map = self._export_info
+        if not field_names:
+            yield from self._readable_fields
+            return
+
+        for field_name in field_names:
+            field = get_serializer_field(self, field_name)
+            field.label = fields_map.get(field_name, field.label)
+            field.source = field_name
+            yield field
+
+    def _trans_value(self, value, field):
+        """
+        字段进行翻译
+        :param value:
+        :param field:
+        :return:
+        """
+        if isinstance(field, ComplexPKRelatedField):
+            value = value.get("label")
+        elif isinstance(getattr(field, "child_relation", None), ComplexPKRelatedField):
+            value = "\n".join(x.get("label", "") for x in value)
+        elif isinstance(field, ChoiceField):
+            value = dict(field.choices).get(value)
+        elif isinstance(field, BooleanField):
+            value = "是" if value else "否"
+        elif isinstance(field, ListSerializer):
+            value = [dict(x) for x in value]
+        elif isinstance(field, BaseSerializer):
+            value = dict(value)
+
+        return value
+
+    def to_representation(self, instance):
+        """
+        Object instance -> Dict of primitive datatypes.
+        """
+        ret = OrderedDict()
+        fields = self.export_fields
+
+        for field in fields:
+            try:
+                attribute = field.get_attribute(instance)
+            except SkipField:
+                continue
+
+            field.label = str(field.label)
+            # We skip `to_representation` for `None` values so that fields do
+            # not have to explicitly deal with that case.
+            #
+            # For related fields with `use_pk_only_optimization` we need to
+            # resolve the pk value.
+            check_for_none = (
+                attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+            )
+            if check_for_none is None:
+                ret[field.label] = None
+            else:
+                value = field.to_representation(attribute)
+                ret[field.label] = self._trans_value(value, field)
+
+        return ret

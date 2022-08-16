@@ -2,7 +2,7 @@ import re
 
 from django.forms import Select, TextInput
 from django.utils.datastructures import MultiValueDict
-from django_filters.widgets import RangeWidget, QueryArrayWidget
+from django_filters.widgets import QueryArrayWidget, RangeWidget
 
 
 class ExtendedSelectMultiple(Select):
@@ -37,11 +37,11 @@ class FixedQueryArrayWidget(QueryArrayWidget):
         if not isinstance(data, MultiValueDict):
             data = MultiValueDict(data)
 
-        values_list = data.getlist(name, data.getlist('%s[]' % name)) or []
+        values_list = data.getlist(name, data.getlist("%s[]" % name)) or []
 
         # treat value as csv string: ?foo=1,2
         if len(values_list) == 1:
-            ret = [x.strip() for x in values_list[0].rstrip(',').split(',') if x]
+            ret = [x.strip() for x in values_list[0].rstrip(",").split(",") if x]
         # apparently its an array, so no need to process it's values as csv
         # ?foo=1&foo=2 -> data.getlist(foo) -> foo = [1, 2]
         # ?foo[]=1&foo[]=2 -> data.getlist(foo[]) -> foo = [1, 2]
@@ -71,7 +71,7 @@ class ExtendedRangeWidget(RangeWidget):
 
 
 class ExtendedDateRangeWidget(ExtendedRangeWidget):
-    suffixes = ['after', 'before']
+    suffixes = ["after", "before"]
 
 
 class LookupTextInput(TextInput):

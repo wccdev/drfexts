@@ -1,21 +1,26 @@
-from django import forms
-from django_filters.constants import EMPTY_VALUES
-from django_filters.fields import RangeField
-from rest_framework.filters import BaseFilterBackend
-from django.db.models import Q
-from django_filters.filters import (
-    CharFilter,
-    MultipleChoiceFilter,
-    ModelMultipleChoiceFilter,
-    DateFromToRangeFilter,
-    Filter,
-)
-
 import operator
 from functools import reduce
 
-from .fields import MultipleValueField, DisplayMultipleChoiceField
-from .widgets import ExtendedRangeWidget, ExtendedDateRangeWidget, FixedQueryArrayWidget, LookupTextInput
+from django import forms
+from django.db.models import Q
+from django_filters.constants import EMPTY_VALUES
+from django_filters.fields import RangeField
+from django_filters.filters import (
+    CharFilter,
+    DateFromToRangeFilter,
+    Filter,
+    ModelMultipleChoiceFilter,
+    MultipleChoiceFilter,
+)
+from rest_framework.filters import BaseFilterBackend
+
+from .fields import DisplayMultipleChoiceField, MultipleValueField
+from .widgets import (
+    ExtendedDateRangeWidget,
+    ExtendedRangeWidget,
+    FixedQueryArrayWidget,
+    LookupTextInput,
+)
 
 
 class SearchFilter(CharFilter):
@@ -25,7 +30,7 @@ class SearchFilter(CharFilter):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("lookup_expr", "icontains")
-        self.search_fields = kwargs.pop('search_fields', None)
+        self.search_fields = kwargs.pop("search_fields", None)
         super().__init__(*args, **kwargs)
 
     def filter(self, qs, value):
@@ -35,11 +40,14 @@ class SearchFilter(CharFilter):
             qs = qs.distinct()
 
         if self.search_fields:
-            queries = (Q(**{'%s__%s' % (search_field, self.lookup_expr): value}) for search_field in self.search_fields)
+            queries = (
+                Q(**{"%s__%s" % (search_field, self.lookup_expr): value})
+                for search_field in self.search_fields
+            )
             conditions = reduce(operator.or_, queries)
             qs = qs.filter(conditions)
         else:
-            lookup = '%s__%s' % (self.field_name, self.lookup_expr)
+            lookup = "%s__%s" % (self.field_name, self.lookup_expr)
             qs = self.filter(**{lookup: value})
 
         return qs
@@ -54,10 +62,11 @@ class MultipleValueFilter(Filter):
         2. ?stage_name=123&stage_name=125
         3. ?stage_name=123,125
     """
+
     field_class = MultipleValueField
 
     def __init__(self, *args, field_class, **kwargs):
-        kwargs.setdefault('lookup_expr', 'exact')
+        kwargs.setdefault("lookup_expr", "exact")
         kwargs.setdefault("widget", FixedQueryArrayWidget)
         super().__init__(*args, field_class=field_class, **kwargs)
 
@@ -67,7 +76,7 @@ class MultipleValueFilter(Filter):
         if self.distinct:
             qs = qs.distinct()
 
-        lookup = '%s__%s' % (self.field_name, self.lookup_expr)
+        lookup = "%s__%s" % (self.field_name, self.lookup_expr)
         queries = (Q(**{lookup: val}) for val in value)
         conditions = reduce(operator.or_, queries)
         qs = self.get_method(qs)(conditions)
@@ -110,7 +119,10 @@ class MultiSearchMixin:
         if self.distinct:  # noqa
             qs = qs.distinct()
 
-        queries = (Q(**{'%s__%s' % (search_field, self.lookup_expr): value}) for search_field in self.search_fields)
+        queries = (
+            Q(**{"%s__%s" % (search_field, self.lookup_expr): value})
+            for search_field in self.search_fields
+        )
         conditions = reduce(operator.or_, queries)
         qs = self.get_method(qs)(conditions)  # noqa
         return qs
@@ -129,14 +141,14 @@ class MultipleChoiceSearchFilter(MultiSearchMixin, ModelMultipleChoiceFilter):
     Extended MultipleChoiceSearchFilter
     """
 
-    lookup_expr = 'in'
+    lookup_expr = "in"
 
 
 class IsNullFilter(Filter):
     field_class = forms.NullBooleanField
 
     def __init__(self, *args, **kwargs):
-        kwargs['lookup_expr'] = 'isnull'
+        kwargs["lookup_expr"] = "isnull"
         super().__init__(*args, **kwargs)
 
 
@@ -196,16 +208,16 @@ class ExtendedRangeFilterMixin:
 
         if value.start is not None and value.stop is not None:
             if value.start == value.stop:
-                self.lookup_expr = 'exact'
+                self.lookup_expr = "exact"
                 value = value.start
             else:
-                self.lookup_expr = 'range'
+                self.lookup_expr = "range"
                 value = (value.start, value.stop)
         elif value.start is not None:
-            self.lookup_expr = 'gte'
+            self.lookup_expr = "gte"
             value = value.start
         elif value.stop is not None:
-            self.lookup_expr = 'lte'
+            self.lookup_expr = "lte"
             value = value.stop
 
         return super().filter(qs, value)  # noqa

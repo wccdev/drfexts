@@ -1,25 +1,23 @@
+import datetime
 import functools
 import operator
 from decimal import Decimal
+from io import BytesIO
+from itertools import chain
+from typing import Any, Optional
 
 import orjson
-from typing import Optional, Any
 import unicodecsv as csv
-from io import BytesIO
-import datetime
-
 from django.conf import settings
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
-
-from rest_framework import status
-from django.utils.encoding import force_str
-
-from rest_framework.settings import api_settings
-from rest_framework.renderers import BaseRenderer
-from rest_framework.status import is_success
-from django.utils.functional import Promise
 from django.db.models.query import QuerySet
+from django.utils.encoding import force_str
+from django.utils.functional import Promise
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from rest_framework import status
+from rest_framework.renderers import BaseRenderer
+from rest_framework.settings import api_settings
+from rest_framework.status import is_success
 
 __all__ = ["CustomJSONRenderer", "CustomCSVRenderer", "CustomExcelRenderer"]
 
@@ -85,7 +83,7 @@ class CustomJSONRenderer(BaseRenderer):
                 the following keys: view, request, response, args, kwargs
         :return: bytes() representation of the data encoded to UTF-8
         """
-        if response := renderer_context.get('response'):
+        if response := renderer_context.get("response"):
             payload = {}
             if hasattr(renderer_context.get("request"), "id"):
                 payload["request_id"] = renderer_context["request"].id
@@ -101,9 +99,11 @@ class CustomJSONRenderer(BaseRenderer):
                     payload["msg"] = data["detail"]
                     payload.pop("data", None)
                 except KeyError:
-                    payload["msg"] = "error"
+                    payload["msg"] = "Invalid input."
 
-            response.status_code = status.HTTP_200_OK  # Set all response status to HTTP 200
+            response.status_code = (
+                status.HTTP_200_OK
+            )  # Set all response status to HTTP 200
         elif data is None:
             return b""
         else:
@@ -121,16 +121,23 @@ class CustomJSONRenderer(BaseRenderer):
 
 
 class BaseExportRenderer(BaseRenderer):
-    def validate(self, data: dict):
+    def validate(self, data: dict) -> bool:
         return True
 
     def get_export_data(self, data: dict):
         return data["results"] if "results" in data else data
 
-    def get_file_name(self, renderer_context: Optional[dict]):
+    def get_file_name(self, renderer_context: Optional[dict]) -> str:
         return f'export({datetime.datetime.now().strftime("%Y%m%d")})'
 
-    def tablize(self, data, header=None, labels=None, value_mapping=None):
+    def get_value(self, item, key):
+        value = item.get(key, "")
+        if isinstance(value, (dict, list)):
+            return str(value)
+
+        return value
+
+    def tablize(self, data, header=None):
         """
         Convert a list of data into a table.
 
@@ -143,7 +150,7 @@ class BaseExportRenderer(BaseRenderer):
         """
         # Try to pull the header off of the data, if it's not passed in as an
         # argument.
-        if not header and hasattr(data, 'header'):
+        if not header and hasattr(data, "header"):
             header = data.header
 
         if data:
@@ -156,34 +163,19 @@ class BaseExportRenderer(BaseRenderer):
             if not header:
                 # We don't have to materialize the data generator unless we
                 # have to build a header.
-                data = tuple(data)
-                header_fields = set()
-                for item in data:
-                    header_fields.update(list(item.keys()))
-                header = sorted(header_fields)
+                first_data = next(data)
+                header = list(first_data.keys())
+                data = chain([first_data], data)
 
             # Return your "table", with the headers as the first row.
-            if labels:
-                yield [labels.get(x, x) for x in header]
-            else:
-                yield header
+            yield header
             # Create a row for each dictionary, filling in columns for which the
             # item has no data with None values.
             for item in data:
-                if value_mapping:
-                    row = [
-                        value_mapping[key].get(item.get(key), item.get(key)) if key in value_mapping else item.get(key)
-                        for key in header
-                    ]
-                else:
-                    row = [item.get(key) for key in header]
-                yield row
+                yield (self.get_value(item, key) for key in header)
         elif header:
             # If there's no data but a header was supplied, yield the header.
-            if labels:
-                yield [labels.get(x, x) for x in header]
-            else:
-                yield header
+            yield header
         else:
             # Generator will yield nothing if there's no data and no header
             pass
@@ -203,10 +195,9 @@ class CustomCSVRenderer(BaseExportRenderer):
     Renderer which serializes to CSV
     """
 
-    media_type = 'text/csv'
-    format = 'csv'
+    media_type = "text/csv"
+    format = "csv"
     header = None
-    labels = None  # {'<field>':'<label>'}
     writer_opts = None
     data_key = "results"
 
@@ -221,20 +212,20 @@ class CustomCSVRenderer(BaseExportRenderer):
         if isinstance(data, dict):
             data = data[self.data_key]
 
-        writer_opts = renderer_context.get('writer_opts', self.writer_opts or {})
-        header = renderer_context.get('header', self.header)
-        labels = renderer_context.get('labels', self.labels)
-        value_mapping = renderer_context.get('value_mapping')
-        encoding = renderer_context.get('encoding', settings.DEFAULT_CHARSET)
+        writer_opts = renderer_context.get("writer_opts", self.writer_opts or {})
+        header = renderer_context.get("header", self.header)
+        encoding = renderer_context.get("encoding", settings.DEFAULT_CHARSET)
 
-        table = self.tablize(data, header=header, labels=labels, value_mapping=value_mapping)
+        table = self.tablize(data, header=header)
         csv_buffer = BytesIO()
         csv_writer = csv.writer(csv_buffer, encoding=encoding, **writer_opts)
         for row in table:
             csv_writer.writerow(row)
 
         filename = self.get_file_name(renderer_context)
-        renderer_context["response"]['Content-Disposition'] = f'attachment; filename="{filename}.csv"'
+        renderer_context["response"][
+            "Content-Disposition"
+        ] = f'attachment; filename="{filename}.csv"'
         return csv_buffer.getvalue()
 
 
@@ -246,23 +237,18 @@ class CustomExcelRenderer(BaseExportRenderer):
     media_type = "application/xlsx"
     format = "xlsx"
     header = None
-    labels = None  # {'<field>':'<label>'}
-    boolean_labels = None
-    custom_mappings = None
-    letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     data_key = "results"
-    header_font = Font(b=True)
-    header_fill = PatternFill('solid', start_color="87CEFA")
-    header_height = 17
-    freeze_header = True
 
-    def excel_style(self, row, col):
+    def get_export_style(self):
         """Convert given row and column number to an Excel-style cell name."""
-        result = []
-        while col:
-            col, rem = divmod(col - 1, 26)
-            result[:0] = self.letters[rem]
-        return ''.join(result) + str(row)
+        return {
+            "header_font": Font(b=True),
+            "header_fill": PatternFill("solid", start_color="87CEFA"),
+            "header_alignment": Alignment(vertical="center"),
+            "header_height": 17,
+            "freeze_header": True,
+            "freeze_panes": "A2",
+        }
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """
@@ -274,12 +260,11 @@ class CustomExcelRenderer(BaseExportRenderer):
         if isinstance(data, dict):
             data = data[self.data_key]
 
-        header = renderer_context.get('header', self.header)
-        labels = renderer_context.get('labels', self.labels)
-        value_mapping = renderer_context.get('value_mapping')
+        header = renderer_context.get("header", self.header)
 
-        table = self.tablize(data, header=header, labels=labels, value_mapping=value_mapping)
+        table = self.tablize(data, header=header)
         excel_buffer = BytesIO()
+        export_style = self.get_export_style()
 
         workbook = Workbook()
         sheet = workbook.active
@@ -288,17 +273,18 @@ class CustomExcelRenderer(BaseExportRenderer):
             sheet.append(row)
 
         for cell in sheet["1:1"]:
-            cell.font = self.header_font
-            cell.fill = self.header_fill
-            cell.alignment = Alignment(vertical='center')
+            cell.font = export_style["header_font"]
+            cell.fill = export_style["header_fill"]
+            cell.alignment = export_style["header_alignment"]
 
-        sheet.row_dimensions[1].height = self.header_height
-        if self.freeze_header:
-            sheet.freeze_panes = f"A2"
+        sheet.row_dimensions[1].height = export_style["header_height"]
+        sheet.freeze_panes = export_style.get("freeze_panes", True)
 
-        sheet.print_title_rows = '1:1'
+        sheet.print_title_rows = "1:1"
         workbook.save(excel_buffer)
 
         filename = self.get_file_name(renderer_context)
-        renderer_context["response"]['Content-Disposition'] = f'attachment; filename="{filename}.xlsx"'
+        renderer_context["response"][
+            "Content-Disposition"
+        ] = f'attachment; filename="{filename}.xlsx"'
         return excel_buffer.getvalue()

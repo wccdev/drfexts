@@ -1,13 +1,12 @@
-from django.db.models import QuerySet
-from rest_framework.relations import ManyRelatedField, RelatedField
-from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer, Serializer
-from rest_framework.fields import ReadOnlyField
 from django.core.exceptions import ImproperlyConfigured
-from rest_framework.settings import api_settings
+from django.db.models import QuerySet
+from rest_framework.fields import ReadOnlyField
+from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.viewsets import GenericViewSet
-from drfexts.metadata import VueTableMetadata
-from drfexts.renderers import CustomExcelRenderer, CustomCSVRenderer
+
+from drfexts.renderers import CustomCSVRenderer, CustomExcelRenderer
+
+from .serializers.serializers import ExportSerializerMixin
 
 
 class EagerLoadingMixin:
@@ -19,7 +18,9 @@ class EagerLoadingMixin:
         """
         queryset = super().get_queryset(*args, **kwargs)
         serilaizer_class = self.get_serializer_class()  # noqa
-        if hasattr(serilaizer_class, "setup_eager_loading") and callable(serilaizer_class.setup_eager_loading):
+        if hasattr(serilaizer_class, "setup_eager_loading") and callable(
+            serilaizer_class.setup_eager_loading
+        ):
             queryset = serilaizer_class.setup_eager_loading(queryset)
             assert isinstance(queryset, QuerySet), (
                 f"Expected '{self.function_name}' to return a QuerySet, "
@@ -62,7 +63,9 @@ class SelectOnlyMixin:
         # or in a nested serializer
         exclude_query_fields = set(getattr(meta, self.exclude_only_fields_name, []))
         if only_fields and exclude_query_fields:
-            raise ImproperlyConfigured("You cannot set both 'only_fields' and 'exclude_only_fields'.")
+            raise ImproperlyConfigured(
+                "You cannot set both 'only_fields' and 'exclude_only_fields'."
+            )
 
         if only_fields:
             return queryset.only(*only_fields)
@@ -95,25 +98,6 @@ class SelectOnlyMixin:
         return queryset
 
 
-class DynamicListModelMixin:
-    """
-    Auto creating serializer-based filter.
-    """
-    metadata_class = VueTableMetadata
-    filter_backends = api_settings.DEFAULT_FILTER_BACKENDS
-
-    def options(self, request, *args, **kwargs):
-        """
-        Handler method for HTTP 'OPTIONS' request.
-        """
-        metadata_class = getattr(self, "metadata_class", None)
-        if metadata_class is None:
-            return getattr(self, "http_method_not_allowed")(request, *args, **kwargs)
-
-        data = metadata_class().determine_metadata(request, self)
-        return Response(data)
-
-
 class ExtGenericViewSet(GenericViewSet):
     _default_key = "default"
     queryset_function_name = "process_queryset"
@@ -121,21 +105,15 @@ class ExtGenericViewSet(GenericViewSet):
 
     def get_serializer_class(self):
         """
-        Return the class to use for the serializer.
-        Defaults to using `self.serializer_class`.
-
-        You may want to override this if you need to provide different
-        serializations depending on the incoming request.
-
-        (Eg. admins get full serialization, others get basic serialization)
+        支持针对不同action指定不同的序列化器
         """
         assert self.serializer_class is not None, (
-                "'%s' should either include a `serializer_class` attribute, "
-                "or override the `get_serializer_class()` method." % self.__class__.__name__
+            "'%s' should either include a `serializer_class` attribute, "
+            "or override the `get_serializer_class()` method." % self.__class__.__name__
         )
         if isinstance(self.serializer_class, dict):  # 多个serializer_class
             assert (
-                    self._default_key in self.serializer_class
+                self._default_key in self.serializer_class
             ), f"多个serializer时serializer_class必须包含下列key:{self._default_key}"
             if self.serializer_class.get(self.action):
                 return self.serializer_class.get(self.action)
@@ -143,6 +121,28 @@ class ExtGenericViewSet(GenericViewSet):
                 return self.serializer_class.get(self._default_key)
 
         return self.serializer_class
+
+    def get_serializer(self, *args, **kwargs):
+        """
+        支持动态设置序列化器字段
+        """
+        serializer_class = self.get_serializer_class()
+        if hasattr(serializer_class, "get_included_fields") and callable(
+            serializer_class.get_included_fields
+        ):
+            included_fields = serializer_class.get_included_fields(self.request)
+            if included_fields:
+                kwargs["fields"] = included_fields
+
+        if hasattr(serializer_class, "get_excluded_fields") and callable(
+            serializer_class.get_excluded_fields
+        ):
+            excluded_fields = serializer_class.get_excluded_fields(self.request)
+            if excluded_fields:
+                kwargs["omit"] = excluded_fields
+
+        kwargs.setdefault("context", self.get_serializer_context())
+        return serializer_class(*args, **kwargs)
 
     def data_permissions(self, request, view, queryset):
         """
@@ -168,9 +168,8 @@ class ExtGenericViewSet(GenericViewSet):
         (Eg. return a list of items that is specific to the user)
         """
         assert self.queryset is not None, (
-                "'%s' should either include a `queryset` attribute, "
-                "or override the `get_queryset()` method."
-                % self.__class__.__name__
+            "'%s' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method." % self.__class__.__name__
         )
 
         queryset = self.queryset
@@ -180,7 +179,9 @@ class ExtGenericViewSet(GenericViewSet):
             # Perform optimization on queryset
             serializer_class = self.get_serializer_class()
             if hasattr(serializer_class, self.queryset_function_name):
-                queryset = getattr(serializer_class, self.queryset_function_name)(self.request, queryset)
+                queryset = getattr(serializer_class, self.queryset_function_name)(
+                    self.request, queryset
+                )
 
         return queryset
 
@@ -189,36 +190,42 @@ class ExportMixin:
     """
     Export data to csv/xlsx file
     """
-    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES + [CustomCSVRenderer, CustomExcelRenderer]
 
-    def get_export_columns(self):
+    export_actions = ["list"]
+
+    def is_export_action(self) -> bool:
         """
-        获取导出列信息
+        Return True if the current action is an export action.
         :return:
         """
-        serializer = self.get_serializer()  # noqa
-        fields = serializer._readable_fields
-        columns = {}
-        for field in fields:
-            field_name = field.field_name
-            if not field.style.get("column_visible", True):
-                continue
+        return self.request.accepted_media_type.startswith(  # noqa
+            (
+                "text/csv",
+                "application/xlsx",
+            )
+        )
 
-            columns[field_name] = {"column_name": str(field.label)}
-            if not isinstance(field, (ManyRelatedField, RelatedField)) and getattr(field, "choices", None):
-                columns[field_name]["choices"] = dict(field.choices)
-        return columns
+    def get_renderers(self):
+        """
+        Instantiates and returns the list of renderers that this view can use.
+        """
+        renderers = super().get_renderers()  # noqa
+        if self.action in self.export_actions:  # noqa
+            return renderers + [CustomCSVRenderer(), CustomExcelRenderer()]
 
-    def get_renderer_context(self):
-        context = super().get_renderer_context()  # noqa
-        export_columns = self.get_export_columns()
-        context['header'] = (
-            self.request.GET['fields'].split(',')  # noqa
-            if 'fields' in self.request.GET else export_columns.keys())  # noqa
-        context['labels'] = {
-            field_name: attrs["column_name"] for field_name, attrs in export_columns.items()
-        }
-        context['value_mapping'] = {
-            field_name: attrs["choices"] for field_name, attrs in export_columns.items() if "choices" in attrs
-        }
-        return context
+        return renderers
+
+    def get_serializer_class(self):
+        """
+        Return the class to use for the serializer.
+        :return:
+        """
+        serializer_class = super().get_serializer_class()  # noqa
+        if self.is_export_action():
+
+            class ExportSerializer(ExportSerializerMixin, serializer_class):
+                ...
+
+            return ExportSerializer
+
+        return serializer_class

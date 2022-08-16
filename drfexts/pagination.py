@@ -16,7 +16,7 @@ class CustomPagination(pagination.PageNumberPagination):
     def paginate_queryset(self, queryset, request, view=None):
         page_num = request.query_params.get(self.page_query_param)
         # 判断，如果 page 为all 则取消分页返回所有
-        if page_num == 'all':
+        if page_num == "all":
             request.query_params._mutable = True
             request.query_params[self.page_query_param] = 1
             request.query_params[self.page_size_query_param] = self.max_page_size
@@ -27,30 +27,30 @@ class CustomPagination(pagination.PageNumberPagination):
     def get_paginated_response(self, data):
         return Response(
             {
-                'total': self.page.paginator.count,
-                'page_size': self.page.paginator.per_page,
-                'current_page': self.page.number,
-                'results': data,
+                "total": self.page.paginator.count,
+                "page_size": self.page.paginator.per_page,
+                "current_page": self.page.number,
+                "results": data,
             }
         )
 
     def get_paginated_response_schema(self, schema):
         return {
-            'type': 'object',
-            'properties': {
-                'total': {
-                    'type': 'integer',
-                    'example': 123,
+            "type": "object",
+            "properties": {
+                "total": {
+                    "type": "integer",
+                    "example": 123,
                 },
-                'page_size': {
-                    'type': 'integer',
-                    'example': 15,
+                "page_size": {
+                    "type": "integer",
+                    "example": 15,
                 },
-                'current_page': {
-                    'type': 'integer',
-                    'example': 1,
+                "current_page": {
+                    "type": "integer",
+                    "example": 1,
                 },
-                'results': schema,
+                "results": schema,
             },
         }
 
@@ -121,7 +121,13 @@ class WithoutCountPagination(CustomPagination):
         return parse.urlunsplit(("", "", path, query, fragment))
 
     def get_paginated_response(self, data):
-        return Response({"list": data, "next": self.get_next_link(), "previous": self.get_previous_link()})
+        return Response(
+            {
+                "list": data,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+            }
+        )
 
 
 class BigPagePagination(CustomPagination):
@@ -142,4 +148,10 @@ class CursorSetPagination(CursorPagination):
         return page
 
     def get_paginated_response(self, data):
-        return Response({"previous": self.get_previous_link(), "next": self.get_next_link(), "list": data})
+        return Response(
+            {
+                "previous": self.get_previous_link(),
+                "next": self.get_next_link(),
+                "list": data,
+            }
+        )

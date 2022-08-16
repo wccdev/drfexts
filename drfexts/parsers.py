@@ -1,7 +1,7 @@
 import codecs
+from typing import Any, Optional
 
 import orjson
-from typing import Any, Optional
 from django.conf import settings
 from rest_framework.parsers import BaseParser, ParseError
 
@@ -40,4 +40,4 @@ class CustomJSONParser(BaseParser):
             decoded_stream = codecs.getreader(encoding)(stream)
             return orjson.loads(decoded_stream.read())
         except ValueError as exc:
-            raise ParseError('JSON parse error - %s' % str(exc))
+            raise ParseError("JSON parse error - %s" % str(exc))
