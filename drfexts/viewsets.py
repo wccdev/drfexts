@@ -34,10 +34,12 @@ class SelectOnlyMixin:
     """
     Mixin used to define select-only fields for queryset
     Cautions:
-        1. The mixin is intended for performance optimization and you don't need it in most cases.
+        1. The mixin is intended for performance optimization
+        and you don't need it in most cases.
     """
 
-    # If using Django filters in the API, these labels mustn't conflict with any model field names.
+    # If using Django filters in the API, these labels mustn't
+    # conflict with any model field names.
     include_only_fields_name = "only_fields"
     expand_only_fields_name = "expand_only_fields"
     exclude_only_fields_name = "exclude_only_fields"
@@ -49,9 +51,10 @@ class SelectOnlyMixin:
         queryset = super().get_queryset()
         serilaizer_class = self.get_serializer_class()  # noqa
 
-        assert issubclass(
-            serilaizer_class, ModelSerializer
-        ), f'Class {serilaizer_class.__class__.__name__} must inherit from "ModelSerializer"'
+        assert issubclass(serilaizer_class, ModelSerializer), (
+            f"Class {serilaizer_class.__class__.__name__} "
+            f'must inherit from "ModelSerializer"'
+        )
 
         if getattr(queryset, "_result_cache", None):
             return queryset
@@ -198,6 +201,9 @@ class ExportMixin:
         Return True if the current action is an export action.
         :return:
         """
+        if not hasattr(self.request, "accepted_media_type"):
+            return False
+
         return self.request.accepted_media_type.startswith(  # noqa
             (
                 "text/csv",
