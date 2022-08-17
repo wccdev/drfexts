@@ -1,3 +1,9 @@
+## v0.16.1 (2022-08-17)
+
+### Fix
+
+- docs return no api  response schema
+
 ## v0.16.0 (2022-08-16)
 
 ### Feat
