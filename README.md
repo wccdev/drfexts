@@ -10,7 +10,6 @@ drfexts
 
 **Extensions for Django REST Framework**
 
-**Author:** aiden lu
 
 Installation
 ------------
@@ -93,6 +92,7 @@ attribute directly:
 >     }
 > ```
 
+
 Pagination
 ----------
 
@@ -104,6 +104,7 @@ For more information about using renderers with Django REST Framework,
 see the [API
 Guide](http://django-rest-framework.org/api-guide/renderers/) or the
 [Tutorial](http://django-rest-framework.org/tutorial/1-serialization/).
+
 
 Running the tests
 -----------------
@@ -118,6 +119,7 @@ $ ./manage.py test
 
 1.0.0
 -----
+
 
 -   Initial release
 
