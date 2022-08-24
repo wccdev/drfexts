@@ -1,6 +1,7 @@
-from itertools import chain
+from typing import Any, Dict, List
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models import Func, fields
 
@@ -129,42 +130,58 @@ class AuditModel(models.Model):
         verbose_name = "审核模型"
 
 
-class ToDictModelMixin:  # noqa
-    def to_dict(self, fields=None, exclude=None, convert_choice=False, fields_map=None):
-        """
-        Return a dict containing the data in ``instance`` suitable for passing as
-        a Form's ``initial`` keyword argument.
+def serialize_model(model: models.Model) -> Dict[str, Any]:
+    """
+    模型序列化，会根据 select_related 和 prefetch_related 关联查询的结果进行序列化，
+    可以在查询时使用 only、defer 来筛选序列化的字段。
+    它不会自做主张的去查询数据库，只用你查询出来的结果，成功避免了 N+1 查询问题。
 
-        ``fields`` is an optional list of field names. If provided, return only the
-        named.
+    """
+    serialized = set()
 
-        ``exclude`` is an optional list of field names. If provided, exclude the
-        named from the returned dict, even if they are listed in the ``fields``
-        argument.
+    def _serialize_model(model_: models.Model) -> Dict[str, Any]:
 
-        ``translate_choice`` If provided, convert the value into display value.
+        # 当 model 存在一对一字段时，会陷入循环，使用闭包的自由变量存储已序列化的 model，
+        # 在第二次循环到该 model 时直接返回 model.pk，不再循环。
+        nonlocal serialized
+        if model_ in serialized:
+            return model_.pk
+        else:
+            serialized.add(model_)
 
-        ``field_map`` is dict object, If provided, perform field name mapping.
-        """
-        opts = self._meta  # noqa
-        fields_map = fields_map or {}
-        data = {}
-        assert not all(
-            [fields, exclude]
-        ), "Cannot set both 'fields' and 'exclude' options."
-        for f in chain(opts.concrete_fields, opts.private_fields):
-            if fields and f.name not in fields:
+        # 当 model 存在一对一或一对多字段，且该字段的值为 None 时，直接返回空{}，否则会报错。
+        if model_ is None:
+            return {}
+
+        result = {
+            name: _serialize_model(foreign_key)
+            for name, foreign_key in model_.__dict__["_state"]
+            .__dict__.get("fields_cache", {})
+            .items()
+        }
+        buried_fields = getattr(model_, "buried_fields", [])
+
+        for name, value in model_.__dict__.items():
+            if name in buried_fields:
+                # 不可暴露的字段
                 continue
-            if exclude and f.name in fields:
+            try:
+                model_._meta.get_field(name)  # noqa
+            except FieldDoesNotExist:
+                # 非模型字段
                 continue
-
-            field_name = fields_map.get(f.name, f.name)
-            if convert_choice and f.choices:
-                data[field_name] = getattr(self, f"get_{f.name}_display")()
             else:
-                data[field_name] = f.value_from_object(self)
+                result[name] = value
 
-        for f in opts.many_to_many:
-            field_name = fields_map.get(f.name, f.name)
-            data[field_name] = [i.id for i in f.value_from_object(self)]
-        return data
+        for name, queryset in model_.__dict__.get(
+            "_prefetched_objects_cache", {}
+        ).items():
+            result[name] = serialize_queryset(queryset)
+
+        return result
+
+    return _serialize_model(model)
+
+
+def serialize_queryset(queryset: models.QuerySet) -> List[Dict[str, Any]]:
+    return [serialize_model(model) for model in queryset]
