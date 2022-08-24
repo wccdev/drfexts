@@ -40,9 +40,9 @@ class ExportSerializerMixin:
             return
 
         for field_name in field_names:
-            field = get_serializer_field(self, field_name)
+            field, source_attrs = get_serializer_field(self, field_name)
             field.label = fields_map.get(field_name, field.label)
-            field.source = field_name
+            field.source_attrs = source_attrs
             yield field
 
     def _trans_value(self, value, field):

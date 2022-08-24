@@ -1,3 +1,9 @@
+## v0.17.1 (2022-08-24)
+
+### Fix
+
+- **export**: fix get source attribute error
+
 ## v0.17.0 (2022-08-18)
 
 ### Feat
