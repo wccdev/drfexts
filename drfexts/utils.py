@@ -85,12 +85,16 @@ def get_serializer_field(serializer, field_path):
     获取序列化器中的字段
     """
     attrs = field_path.split(".")
+    source_attrs = []
     for attr in attrs:
         try:
             serializer = serializer.fields[attr]
+            if serializer.source == "*":
+                continue
+            source_attrs.extend(serializer.source.split("."))
         except AttributeError:
             break
         except KeyError:
             raise ValueError(f"无效导出字段: {field_path}")
 
-    return serializer
+    return serializer, source_attrs
