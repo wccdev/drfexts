@@ -7,6 +7,8 @@ drfexts
 [![PyPI - Django Version](https://img.shields.io/badge/django-%3E%3D3.0-44B78B)](https://www.djangoproject.com/)
 [![PyPI - DRF Version](https://img.shields.io/badge/djangorestframework-%3E%3D3.0-red)](https://www.django-rest-framework.org)
 [![Build Status](https://app.travis-ci.com/aiden520/drfexts.svg?branch=master)](https://app.travis-ci.com/aiden520/drfexts)
+[![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+
 
 **Extensions for Django REST Framework**
 
