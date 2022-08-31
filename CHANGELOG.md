@@ -1,3 +1,9 @@
+## v0.17.2 (2022-08-31)
+
+### Fix
+
+- **renderer**: return blank result instead of error page
+
 ## v0.17.1 (2022-08-24)
 
 ### Fix
