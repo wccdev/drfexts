@@ -1,3 +1,9 @@
+## v0.17.4 (2022-08-31)
+
+### Refactor
+
+- **renderer**: optimize for excel
+
 ## v0.17.3 (2022-08-31)
 
 ### Fix
