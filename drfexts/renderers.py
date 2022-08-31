@@ -210,7 +210,10 @@ class CustomCSVRenderer(BaseExportRenderer):
             return bytes()
 
         if isinstance(data, dict):
-            data = data[self.data_key]
+            try:
+                data = data[self.data_key]
+            except KeyError:
+                data = []
 
         writer_opts = renderer_context.get("writer_opts", self.writer_opts or {})
         header = renderer_context.get("header", self.header)
@@ -258,7 +261,10 @@ class CustomExcelRenderer(BaseExportRenderer):
             return bytes()
 
         if isinstance(data, dict):
-            data = data[self.data_key]
+            try:
+                data = data[self.data_key]
+            except KeyError:
+                data = []
 
         header = renderer_context.get("header", self.header)
 
