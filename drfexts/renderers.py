@@ -8,7 +8,6 @@ from typing import Any, Optional
 
 import orjson
 import unicodecsv as csv
-from django.conf import settings
 from django.db.models.query import QuerySet
 from django.utils.encoding import force_str
 from django.utils.functional import Promise
@@ -217,7 +216,8 @@ class CustomCSVRenderer(BaseExportRenderer):
 
         writer_opts = renderer_context.get("writer_opts", self.writer_opts or {})
         header = renderer_context.get("header", self.header)
-        encoding = renderer_context.get("encoding", settings.DEFAULT_CHARSET)
+        # excel 打开utf-8的文件会乱码，所以改成gbk
+        encoding = renderer_context.get("encoding", "gbk")
 
         table = self.tablize(data, header=header)
         csv_buffer = BytesIO()
