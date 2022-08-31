@@ -1,3 +1,9 @@
+## v0.17.5 (2022-08-31)
+
+### Refactor
+
+- update package dependency
+
 ## v0.17.4 (2022-08-31)
 
 ### Refactor
