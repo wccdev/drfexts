@@ -75,12 +75,15 @@ class ExportSerializerMixin:
         fields = self.export_fields
 
         for field in fields:
+            field.label = str(field.label)
             try:
                 attribute = field.get_attribute(instance)
             except SkipField:
                 continue
+            except AttributeError:
+                ret[field.label] = ""
+                continue
 
-            field.label = str(field.label)
             # We skip `to_representation` for `None` values so that fields do
             # not have to explicitly deal with that case.
             #
