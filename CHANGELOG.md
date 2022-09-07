@@ -1,3 +1,9 @@
+## v0.17.6 (2022-09-07)
+
+### Fix
+
+- fix rendering erros
+
 ## v0.17.5 (2022-08-31)
 
 ### Refactor
