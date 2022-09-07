@@ -4,7 +4,7 @@ from rest_framework.fields import ReadOnlyField
 from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.viewsets import GenericViewSet
 
-from drfexts.renderers import CustomCSVRenderer, CustomExcelRenderer
+from drfexts.renderers import CustomCSVRenderer, CustomXLSXRenderer
 
 from .serializers.serializers import ExportSerializerMixin
 
@@ -217,7 +217,7 @@ class ExportMixin:
         """
         renderers = super().get_renderers()  # noqa
         if self.action in self.export_actions:  # noqa
-            return renderers + [CustomCSVRenderer(), CustomExcelRenderer()]
+            return renderers + [CustomCSVRenderer(), CustomXLSXRenderer()]
 
         return renderers
 
