@@ -22,14 +22,14 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0.0"
-django = "^3.2"
+django = "^3.2.15"
 django-storages = ">=1.12.3"
 django-filter = ">=21.1"
 djangorestframework = ">=3.12.4"
 pip = ">=21.3.1"
 djangorestframework-csv = ">=2.1.1"
 openpyxl = ">=3.0.9"
-orjson = ">=3.6.7"
+orjson = ">=3.8.0"
 django-currentuser = ">=0.5.3"
 drf-flex-fields = ">=0.9.8"
 

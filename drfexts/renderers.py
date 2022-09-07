@@ -18,7 +18,7 @@ from rest_framework.renderers import BaseRenderer
 from rest_framework.settings import api_settings
 from rest_framework.status import is_success
 
-__all__ = ["CustomJSONRenderer", "CustomCSVRenderer", "CustomExcelRenderer"]
+__all__ = ["CustomJSONRenderer", "CustomCSVRenderer", "CustomXLSXRenderer"]
 
 
 class CustomJSONRenderer(BaseRenderer):
@@ -99,6 +99,10 @@ class CustomJSONRenderer(BaseRenderer):
                     payload.pop("data", None)
                 except KeyError:
                     payload["msg"] = "Invalid input."
+                except TypeError:
+                    data = data[0]
+                    payload["msg"] = data["detail"]
+                    payload.pop("data", None)
 
             response.status_code = (
                 status.HTTP_200_OK
@@ -120,15 +124,6 @@ class CustomJSONRenderer(BaseRenderer):
 
 
 class BaseExportRenderer(BaseRenderer):
-    def validate(self, data: dict) -> bool:
-        return True
-
-    def get_export_data(self, data: dict):
-        return data["results"] if "results" in data else data
-
-    def get_file_name(self, renderer_context: Optional[dict]) -> str:
-        return f'export({datetime.datetime.now().strftime("%Y%m%d")})'
-
     def get_value(self, item, key):
         value = item.get(key, "")
         if isinstance(value, (dict, list)):
@@ -225,14 +220,10 @@ class CustomCSVRenderer(BaseExportRenderer):
         for row in table:
             csv_writer.writerow(row)
 
-        filename = self.get_file_name(renderer_context)
-        renderer_context["response"][
-            "Content-Disposition"
-        ] = f'attachment; filename="{filename}.csv"'
         return csv_buffer.getvalue()
 
 
-class CustomExcelRenderer(BaseExportRenderer):
+class CustomXLSXRenderer(BaseExportRenderer):
     """
     Renderer for Excel spreadsheet open data format (xlsx).
     """
@@ -241,23 +232,20 @@ class CustomExcelRenderer(BaseExportRenderer):
     format = "xlsx"
     header = None
     data_key = "results"
-
-    def get_export_style(self):
-        """Convert given row and column number to an Excel-style cell name."""
-        return {
-            "header_font": Font(b=True),
-            "header_fill": PatternFill("solid", start_color="87CEFA"),
-            "header_alignment": Alignment(vertical="center"),
-            "header_height": 17,
-            "freeze_header": True,
-            "freeze_panes": "A2",
-        }
+    export_style = {
+        "header_font": Font(b=True),
+        "header_fill": PatternFill("solid", start_color="87CEFA"),
+        "header_alignment": Alignment(vertical="center"),
+        "header_height": 18,
+        "freeze_header": True,
+        "freeze_panes": "A2",
+    }
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """
         Render `data` into XLSX workbook, returning a workbook.
         """
-        if not self.validate(data):
+        if data is None:
             return bytes()
 
         if isinstance(data, dict):
@@ -267,10 +255,10 @@ class CustomExcelRenderer(BaseExportRenderer):
                 data = []
 
         header = renderer_context.get("header", self.header)
+        export_style = renderer_context.get("export_style", self.export_style)
 
         table = self.tablize(data, header=header)
         excel_buffer = BytesIO()
-        export_style = self.get_export_style()
 
         workbook = Workbook()
         sheet = workbook.active
@@ -289,8 +277,4 @@ class CustomExcelRenderer(BaseExportRenderer):
         sheet.print_title_rows = "1:1"
         workbook.save(excel_buffer)
 
-        filename = self.get_file_name(renderer_context)
-        renderer_context["response"][
-            "Content-Disposition"
-        ] = f'attachment; filename="{filename}.xlsx"'
         return excel_buffer.getvalue()
