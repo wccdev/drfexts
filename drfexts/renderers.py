@@ -5,6 +5,7 @@ from decimal import Decimal
 from io import BytesIO
 from itertools import chain
 from typing import Any, Optional
+from urllib.parse import quote
 
 import orjson
 import unicodecsv as csv
@@ -124,6 +125,45 @@ class CustomJSONRenderer(BaseRenderer):
 
 
 class BaseExportRenderer(BaseRenderer):
+    default_base_filename = "export"
+    header = None
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        """
+        Renders serialized *data* into CSV. For a dictionary:
+        """
+        renderer_context = renderer_context or {}
+        response = renderer_context.get("response")
+
+        if data is None:
+            return bytes()
+
+        if isinstance(data, dict):
+            try:
+                data = data[self.data_key]
+            except (KeyError, TypeError):
+                data = []
+
+        writer_opts = renderer_context.get("writer_opts", {})
+        header = writer_opts.get("header", self.header)
+        # excel 打开utf-8的文件会乱码，所以改成gbk
+        charset = writer_opts.get("charset", self.charset)
+        base_filename = writer_opts.get("base_filename", self.default_base_filename)
+        table = self.tablize(data, header=header)
+        file_content = self.get_file_content(
+            table, charset=charset, writer_opts=writer_opts
+        )
+
+        encoded_filename = f"{quote(base_filename)}.{self.format}"
+        # 解决下载中文文件名乱码问题, 详情见: RFC 5987: https://www.rfc-editor.org/rfc/rfc5987.txt
+        response[
+            "content-disposition"
+        ] = f"attachment; filename* = UTF-8''{encoded_filename}"
+        return file_content
+
+    def get_file_content(self, table, charset=None, writer_opts=None) -> bytes:
+        raise NotImplementedError
+
     def get_value(self, item, key):
         value = item.get(key, "")
         if isinstance(value, (dict, list)):
@@ -191,36 +231,23 @@ class CustomCSVRenderer(BaseExportRenderer):
 
     media_type = "text/csv"
     format = "csv"
-    header = None
+    charset = "gbk"  # excel 打开utf-8的文件会乱码，所以改成gbk
     writer_opts = None
     data_key = "results"
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
+    def get_file_content(self, table, charset=None, writer_opts=None) -> bytes:
         """
-        Renders serialized *data* into CSV. For a dictionary:
+        Return the file content for the given table.
+
+        This method is responsible for writing the table to a file-like object
+        and returning the resulting file content.
         """
-        renderer_context = renderer_context or {}
-        if data is None:
-            return bytes()
-
-        if isinstance(data, dict):
-            try:
-                data = data[self.data_key]
-            except KeyError:
-                data = []
-
-        writer_opts = renderer_context.get("writer_opts", self.writer_opts or {})
-        header = renderer_context.get("header", self.header)
-        # excel 打开utf-8的文件会乱码，所以改成gbk
-        encoding = renderer_context.get("encoding", "gbk")
-
-        table = self.tablize(data, header=header)
-        csv_buffer = BytesIO()
-        csv_writer = csv.writer(csv_buffer, encoding=encoding, **writer_opts)
+        output = BytesIO()
+        writer = csv.writer(output, encoding=charset)
         for row in table:
-            csv_writer.writerow(row)
+            writer.writerow(row)
 
-        return csv_buffer.getvalue()
+        return output.getvalue()
 
 
 class CustomXLSXRenderer(BaseExportRenderer):
@@ -230,9 +257,10 @@ class CustomXLSXRenderer(BaseExportRenderer):
 
     media_type = "application/xlsx"
     format = "xlsx"
-    header = None
+    charset = None
+    writer_opts = None
     data_key = "results"
-    export_style = {
+    default_export_style = {
         "header_font": Font(b=True),
         "header_fill": PatternFill("solid", start_color="87CEFA"),
         "header_alignment": Alignment(vertical="center"),
@@ -241,25 +269,11 @@ class CustomXLSXRenderer(BaseExportRenderer):
         "freeze_panes": "A2",
     }
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        """
-        Render `data` into XLSX workbook, returning a workbook.
-        """
-        if data is None:
-            return bytes()
+    def get_file_content(self, table, charset=None, writer_opts=None):
+        writer_opts = writer_opts or {}
+        export_style = writer_opts.get("export_style", self.default_export_style)
 
-        if isinstance(data, dict):
-            try:
-                data = data[self.data_key]
-            except KeyError:
-                data = []
-
-        header = renderer_context.get("header", self.header)
-        export_style = renderer_context.get("export_style", self.export_style)
-
-        table = self.tablize(data, header=header)
-        excel_buffer = BytesIO()
-
+        output = BytesIO()
         workbook = Workbook()
         sheet = workbook.active
 
@@ -275,6 +289,6 @@ class CustomXLSXRenderer(BaseExportRenderer):
         sheet.freeze_panes = export_style.get("freeze_panes", True)
 
         sheet.print_title_rows = "1:1"
-        workbook.save(excel_buffer)
+        workbook.save(output)
 
-        return excel_buffer.getvalue()
+        return output.getvalue()
