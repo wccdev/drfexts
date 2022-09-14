@@ -156,9 +156,10 @@ class BaseExportRenderer(BaseRenderer):
 
         encoded_filename = f"{quote(base_filename)}.{self.format}"
         # 解决下载中文文件名乱码问题, 详情见: RFC 5987: https://www.rfc-editor.org/rfc/rfc5987.txt
-        response[
-            "content-disposition"
-        ] = f"attachment; filename* = UTF-8''{encoded_filename}"
+        if response:
+            response[
+                "content-disposition"
+            ] = f"attachment; filename* = UTF-8''{encoded_filename}"
         return file_content
 
     def get_file_content(self, table, charset=None, writer_opts=None) -> bytes:
