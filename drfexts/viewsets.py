@@ -195,6 +195,7 @@ class ExportMixin:
     """
 
     export_actions = ["list"]
+    default_base_filename = "export"
 
     def is_export_action(self) -> bool:
         """
@@ -235,3 +236,25 @@ class ExportMixin:
             return ExportSerializer
 
         return serializer_class
+
+    def get_renderer_context(self):
+        """
+        Return the renderer context to use for rendering.
+        :return:
+        """
+        context = super().get_renderer_context()  # noqa
+        export_filename = self.get_export_filename()
+        if export_filename:
+            context["writer_opts"] = {"filename": export_filename}
+
+        return context
+
+    def get_export_filename(self):
+        """
+        Return the filename of the export file.
+        :return:
+        """
+        if "filename" in self.request.query_params:  # noqa
+            return self.request.query_params["filename"]  # noqa
+
+        return f"{self.default_base_filename}.csv"

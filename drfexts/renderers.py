@@ -148,18 +148,22 @@ class BaseExportRenderer(BaseRenderer):
         header = writer_opts.get("header", self.header)
         # excel 打开utf-8的文件会乱码，所以改成gbk
         charset = writer_opts.get("charset", self.charset)
-        base_filename = writer_opts.get("base_filename", self.default_base_filename)
+        filename = writer_opts.get("filename")
+        if filename:
+            encoded_filename = quote(filename)
+        else:
+            encoded_filename = f"{self.default_base_filename}.{self.format}"
+
         table = self.tablize(data, header=header)
         file_content = self.get_file_content(
             table, charset=charset, writer_opts=writer_opts
         )
 
-        encoded_filename = f"{quote(base_filename)}.{self.format}"
         # 解决下载中文文件名乱码问题, 详情见: RFC 5987: https://www.rfc-editor.org/rfc/rfc5987.txt
         if response:
             response[
                 "content-disposition"
-            ] = f"attachment; filename* = UTF-8''{encoded_filename}"
+            ] = f"attachment; filename*=UTF-8''{encoded_filename}"
         return file_content
 
     def get_file_content(self, table, charset=None, writer_opts=None) -> bytes:
