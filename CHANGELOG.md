@@ -1,3 +1,57 @@
+## v0.18.0 (2022-09-27)
+
+### Feat
+
+- add support for setting custom export filename
+
+## v0.17.9 (2022-09-14)
+
+### Fix
+
+- **renderer**: fix some bugs
+
+## v0.17.8 (2022-09-08)
+
+### Fix
+
+- **renderer**: fix some bugs
+
+## v0.17.7 (2022-09-07)
+
+### Fix
+
+- fix rendering erros
+
+## v0.17.6 (2022-09-07)
+
+### Fix
+
+- fix rendering erros
+
+## v0.17.5 (2022-08-31)
+
+### Refactor
+
+- update package dependency
+
+## v0.17.4 (2022-08-31)
+
+### Refactor
+
+- **renderer**: optimize for excel
+
+## v0.17.3 (2022-08-31)
+
+### Fix
+
+- **renderer**: set blank string as default
+
+## v0.17.2 (2022-08-31)
+
+### Fix
+
+- **renderer**: return blank result instead of error page
+
 ## v0.17.1 (2022-08-24)
 
 ### Fix

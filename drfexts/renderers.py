@@ -5,10 +5,10 @@ from decimal import Decimal
 from io import BytesIO
 from itertools import chain
 from typing import Any, Optional
+from urllib.parse import quote
 
 import orjson
 import unicodecsv as csv
-from django.conf import settings
 from django.db.models.query import QuerySet
 from django.utils.encoding import force_str
 from django.utils.functional import Promise
@@ -19,7 +19,7 @@ from rest_framework.renderers import BaseRenderer
 from rest_framework.settings import api_settings
 from rest_framework.status import is_success
 
-__all__ = ["CustomJSONRenderer", "CustomCSVRenderer", "CustomExcelRenderer"]
+__all__ = ["CustomJSONRenderer", "CustomCSVRenderer", "CustomXLSXRenderer"]
 
 
 class CustomJSONRenderer(BaseRenderer):
@@ -100,6 +100,10 @@ class CustomJSONRenderer(BaseRenderer):
                     payload.pop("data", None)
                 except KeyError:
                     payload["msg"] = "Invalid input."
+                except TypeError:
+                    data = data[0]
+                    payload["msg"] = data["detail"]
+                    payload.pop("data", None)
 
             response.status_code = (
                 status.HTTP_200_OK
@@ -121,14 +125,49 @@ class CustomJSONRenderer(BaseRenderer):
 
 
 class BaseExportRenderer(BaseRenderer):
-    def validate(self, data: dict) -> bool:
-        return True
+    default_base_filename = "export"
+    header = None
 
-    def get_export_data(self, data: dict):
-        return data["results"] if "results" in data else data
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        """
+        Renders serialized *data* into CSV. For a dictionary:
+        """
+        renderer_context = renderer_context or {}
+        response = renderer_context.get("response")
 
-    def get_file_name(self, renderer_context: Optional[dict]) -> str:
-        return f'export({datetime.datetime.now().strftime("%Y%m%d")})'
+        if data is None:
+            return bytes()
+
+        if isinstance(data, dict):
+            try:
+                data = data[self.data_key]
+            except (KeyError, TypeError):
+                data = []
+
+        writer_opts = renderer_context.get("writer_opts", {})
+        header = writer_opts.get("header", self.header)
+        # excel 打开utf-8的文件会乱码，所以改成gbk
+        charset = writer_opts.get("charset", self.charset)
+        filename = writer_opts.get("filename")
+        if filename:
+            encoded_filename = quote(filename)
+        else:
+            encoded_filename = f"{self.default_base_filename}.{self.format}"
+
+        table = self.tablize(data, header=header)
+        file_content = self.get_file_content(
+            table, charset=charset, writer_opts=writer_opts
+        )
+
+        # 解决下载中文文件名乱码问题, 详情见: RFC 5987: https://www.rfc-editor.org/rfc/rfc5987.txt
+        if response:
+            response[
+                "content-disposition"
+            ] = f"attachment; filename*=UTF-8''{encoded_filename}"
+        return file_content
+
+    def get_file_content(self, table, charset=None, writer_opts=None) -> bytes:
+        raise NotImplementedError
 
     def get_value(self, item, key):
         value = item.get(key, "")
@@ -197,75 +236,49 @@ class CustomCSVRenderer(BaseExportRenderer):
 
     media_type = "text/csv"
     format = "csv"
-    header = None
+    charset = "gbk"  # excel 打开utf-8的文件会乱码，所以改成gbk
     writer_opts = None
     data_key = "results"
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
+    def get_file_content(self, table, charset=None, writer_opts=None) -> bytes:
         """
-        Renders serialized *data* into CSV. For a dictionary:
+        Return the file content for the given table.
+
+        This method is responsible for writing the table to a file-like object
+        and returning the resulting file content.
         """
-        renderer_context = renderer_context or {}
-        if data is None:
-            return bytes()
-
-        if isinstance(data, dict):
-            data = data[self.data_key]
-
-        writer_opts = renderer_context.get("writer_opts", self.writer_opts or {})
-        header = renderer_context.get("header", self.header)
-        encoding = renderer_context.get("encoding", settings.DEFAULT_CHARSET)
-
-        table = self.tablize(data, header=header)
-        csv_buffer = BytesIO()
-        csv_writer = csv.writer(csv_buffer, encoding=encoding, **writer_opts)
+        output = BytesIO()
+        writer = csv.writer(output, encoding=charset)
         for row in table:
-            csv_writer.writerow(row)
+            writer.writerow(row)
 
-        filename = self.get_file_name(renderer_context)
-        renderer_context["response"][
-            "Content-Disposition"
-        ] = f'attachment; filename="{filename}.csv"'
-        return csv_buffer.getvalue()
+        return output.getvalue()
 
 
-class CustomExcelRenderer(BaseExportRenderer):
+class CustomXLSXRenderer(BaseExportRenderer):
     """
     Renderer for Excel spreadsheet open data format (xlsx).
     """
 
     media_type = "application/xlsx"
     format = "xlsx"
-    header = None
+    charset = None
+    writer_opts = None
     data_key = "results"
+    default_export_style = {
+        "header_font": Font(b=True),
+        "header_fill": PatternFill("solid", start_color="87CEFA"),
+        "header_alignment": Alignment(vertical="center"),
+        "header_height": 18,
+        "freeze_header": True,
+        "freeze_panes": "A2",
+    }
 
-    def get_export_style(self):
-        """Convert given row and column number to an Excel-style cell name."""
-        return {
-            "header_font": Font(b=True),
-            "header_fill": PatternFill("solid", start_color="87CEFA"),
-            "header_alignment": Alignment(vertical="center"),
-            "header_height": 17,
-            "freeze_header": True,
-            "freeze_panes": "A2",
-        }
+    def get_file_content(self, table, charset=None, writer_opts=None):
+        writer_opts = writer_opts or {}
+        export_style = writer_opts.get("export_style", self.default_export_style)
 
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        """
-        Render `data` into XLSX workbook, returning a workbook.
-        """
-        if not self.validate(data):
-            return bytes()
-
-        if isinstance(data, dict):
-            data = data[self.data_key]
-
-        header = renderer_context.get("header", self.header)
-
-        table = self.tablize(data, header=header)
-        excel_buffer = BytesIO()
-        export_style = self.get_export_style()
-
+        output = BytesIO()
         workbook = Workbook()
         sheet = workbook.active
 
@@ -281,10 +294,6 @@ class CustomExcelRenderer(BaseExportRenderer):
         sheet.freeze_panes = export_style.get("freeze_panes", True)
 
         sheet.print_title_rows = "1:1"
-        workbook.save(excel_buffer)
+        workbook.save(output)
 
-        filename = self.get_file_name(renderer_context)
-        renderer_context["response"][
-            "Content-Disposition"
-        ] = f'attachment; filename="{filename}.xlsx"'
-        return excel_buffer.getvalue()
+        return output.getvalue()

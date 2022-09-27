@@ -4,7 +4,7 @@ from rest_framework.fields import ReadOnlyField
 from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.viewsets import GenericViewSet
 
-from drfexts.renderers import CustomCSVRenderer, CustomExcelRenderer
+from drfexts.renderers import CustomCSVRenderer, CustomXLSXRenderer
 
 from .serializers.serializers import ExportSerializerMixin
 
@@ -195,6 +195,7 @@ class ExportMixin:
     """
 
     export_actions = ["list"]
+    default_base_filename = "export"
 
     def is_export_action(self) -> bool:
         """
@@ -217,7 +218,7 @@ class ExportMixin:
         """
         renderers = super().get_renderers()  # noqa
         if self.action in self.export_actions:  # noqa
-            return renderers + [CustomCSVRenderer(), CustomExcelRenderer()]
+            return renderers + [CustomCSVRenderer(), CustomXLSXRenderer()]
 
         return renderers
 
@@ -235,3 +236,25 @@ class ExportMixin:
             return ExportSerializer
 
         return serializer_class
+
+    def get_renderer_context(self):
+        """
+        Return the renderer context to use for rendering.
+        :return:
+        """
+        context = super().get_renderer_context()  # noqa
+        export_filename = self.get_export_filename()
+        if export_filename:
+            context["writer_opts"] = {"filename": export_filename}
+
+        return context
+
+    def get_export_filename(self):
+        """
+        Return the filename of the export file.
+        :return:
+        """
+        if "filename" in self.request.query_params:  # noqa
+            return self.request.query_params["filename"]  # noqa
+
+        return f"{self.default_base_filename}.csv"

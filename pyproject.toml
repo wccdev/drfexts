@@ -1,5 +1,5 @@
 [tool.commitizen]
-version = "0.17.1"
+version = "0.18.0"
 tag_format = "v$major.$minor.$patch$prerelease"
 version_files = [
     "pyproject.toml:version",
@@ -8,7 +8,7 @@ version_files = [
 
 [tool.poetry]
 name = "drfexts"
-version = "0.17.1"
+version = "0.18.0"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -22,17 +22,16 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0.0"
-django = "^3.2"
+django = "^3.2.15"
 django-storages = ">=1.12.3"
 django-filter = ">=21.1"
 djangorestframework = ">=3.12.4"
 pip = ">=21.3.1"
-djangorestframework-csv = "^2.1.1"
+djangorestframework-csv = ">=2.1.1"
 openpyxl = ">=3.0.9"
-pydantic = "1.8.2"
-orjson = "^3.6.7"
-django-currentuser = "^0.5.3"
-drf-flex-fields = "^0.9.8"
+orjson = ">=3.8.0"
+django-currentuser = ">=0.5.3"
+drf-flex-fields = ">=0.9.8"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
