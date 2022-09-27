@@ -1,3 +1,9 @@
+## v0.18.0 (2022-09-27)
+
+### Feat
+
+- add support for setting custom export filename
+
 ## v0.17.9 (2022-09-14)
 
 ### Fix
