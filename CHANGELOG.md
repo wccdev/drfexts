@@ -1,3 +1,9 @@
+## v0.18.4 (2022-10-17)
+
+### Fix
+
+- change package ref to url
+
 ## v0.18.3 (2022-10-17)
 
 ### Fix
