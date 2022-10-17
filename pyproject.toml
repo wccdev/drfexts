@@ -30,7 +30,7 @@ pip = ">=21.3.1"
 djangorestframework-csv = ">=2.1.1"
 openpyxl = ">=3.0.9"
 orjson = ">=3.8.0"
-django-currentuser = ">=0.5.3"
+django-currentuser = { git = "https://github.com/PaesslerAG/django-currentuser.git", tag = "v0.5.4" }
 drf-flex-fields = ">=0.9.8"
 
 [tool.poetry.group.dev.dependencies]
