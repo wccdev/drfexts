@@ -1,3 +1,9 @@
+## v0.19.2 (2022-10-19)
+
+### Fix
+
+- fix recursively calling  method
+
 ## v0.19.1 (2022-10-19)
 
 ### Fix
