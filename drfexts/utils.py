@@ -92,9 +92,7 @@ def get_serializer_field(serializer, field_path):
             if serializer.source == "*":
                 continue
             source_attrs.extend(serializer.source.split("."))
-        except AttributeError:
+        except (AttributeError, KeyError):
             break
-        except KeyError:
-            pass
 
     return serializer, source_attrs

@@ -6,7 +6,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from drfexts.renderers import CustomCSVRenderer, CustomXLSXRenderer
 
-from .serializers.serializers import ExportSerializerMixin
+from .serializers.mixins import ExportSerializerMixin
 
 
 class EagerLoadingMixin:
