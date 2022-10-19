@@ -1,3 +1,9 @@
+## v0.19.0 (2022-10-19)
+
+### Feat
+
+- pass viewset instance to  and
+
 ## v0.18.4 (2022-10-17)
 
 ### Fix
