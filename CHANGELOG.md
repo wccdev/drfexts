@@ -1,3 +1,9 @@
+## v0.19.1 (2022-10-19)
+
+### Fix
+
+- ignore KeyError when exporting file
+
 ## v0.19.0 (2022-10-19)
 
 ### Feat
