@@ -95,6 +95,6 @@ def get_serializer_field(serializer, field_path):
         except AttributeError:
             break
         except KeyError:
-            raise ValueError(f"无效导出字段: {field_path}")
+            pass
 
     return serializer, source_attrs
