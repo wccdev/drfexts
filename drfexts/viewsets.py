@@ -133,14 +133,14 @@ class ExtGenericViewSet(GenericViewSet):
         if hasattr(serializer_class, "get_included_fields") and callable(
             serializer_class.get_included_fields
         ):
-            included_fields = serializer_class.get_included_fields(self.request)
+            included_fields = serializer_class.get_included_fields(self, self.request)
             if included_fields:
                 kwargs["fields"] = included_fields
 
         if hasattr(serializer_class, "get_excluded_fields") and callable(
             serializer_class.get_excluded_fields
         ):
-            excluded_fields = serializer_class.get_excluded_fields(self.request)
+            excluded_fields = serializer_class.get_excluded_fields(self, self.request)
             if excluded_fields:
                 kwargs["omit"] = excluded_fields
 
