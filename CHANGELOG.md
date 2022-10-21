@@ -1,3 +1,9 @@
+## v0.19.3 (2022-10-21)
+
+### Fix
+
+- fix that custom method field will be skipped when exporting csv/xlsx
+
 ## v0.19.2 (2022-10-19)
 
 ### Fix
