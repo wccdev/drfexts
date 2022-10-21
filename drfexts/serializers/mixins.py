@@ -56,8 +56,8 @@ class ExportSerializerMixin:
             return
 
         for field_name in field_names:
-            field, source_attrs = get_serializer_field(self, field_name)
-            if not source_attrs:
+            field, source_attrs, is_skipped = get_serializer_field(self, field_name)
+            if is_skipped:
                 continue
 
             field.label = fields_map.get(field_name, field.label)
