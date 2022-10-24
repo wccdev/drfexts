@@ -269,7 +269,7 @@ class CustomXLSXRenderer(BaseExportRenderer):
         "header_font": Font(b=True),
         "header_fill": PatternFill("solid", start_color="87CEFA"),
         "header_alignment": Alignment(vertical="center"),
-        "header_height": 18,
+        "header_height": 20,
         "freeze_header": True,
         "freeze_panes": "A2",
     }
