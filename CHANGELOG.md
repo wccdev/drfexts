@@ -1,3 +1,9 @@
+## v0.19.4 (2022-11-01)
+
+### Fix
+
+- **renderer**: change renderer error message
+
 ## v0.19.3 (2022-10-21)
 
 ### Fix
