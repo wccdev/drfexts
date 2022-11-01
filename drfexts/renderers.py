@@ -102,7 +102,11 @@ class CustomJSONRenderer(BaseRenderer):
                     payload["msg"] = "Invalid input."
                 except TypeError:
                     data = data[0]
-                    payload["msg"] = data["detail"]
+                    try:
+                        payload["msg"] = data["detail"]
+                    except KeyError:
+                        payload["msg"] = str(data)
+
                     payload.pop("data", None)
 
             response.status_code = (
