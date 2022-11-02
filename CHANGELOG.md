@@ -1,3 +1,9 @@
+## v0.19.5 (2022-11-02)
+
+### Fix
+
+- **serializers**: fix abnormal behavior with
+
 ## v0.19.4 (2022-11-01)
 
 ### Fix
