@@ -64,7 +64,7 @@ class DisplayChoiceField(ChoiceField):
         # Allows us to deal with eg. integer choices while supporting either
         # integer or string input, but still get the correct datatype out.
         self.choice_strings_to_values = {
-            str(label): value for value, label in self.choices
+            str(label): value for value, label in self.choices.items()
         }
         self.values_to_choice_strings = dict(self.choices)
 
