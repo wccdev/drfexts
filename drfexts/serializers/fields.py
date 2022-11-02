@@ -47,32 +47,28 @@ class SequenceField(Field):
 
 class DisplayChoiceField(ChoiceField):
     """
-    Serialize: convert value into choice strings
-    Deserialize: convert choice strings into value
+    Serialize: convert values into choice strings
+    Deserialize: convert choice strings into values
     """
 
     def to_representation(self, value):
         if value in ("", None):
             return value
-        return self.value_to_display_strings.get(str(value), value)
-
-    def _get_choices(self):
-        return self._choices
+        return self.values_to_choice_strings.get(str(value), value)
 
     def _set_choices(self, choices):
         self.grouped_choices = to_choices_dict(choices)
         self._choices = flatten_choices_dict(self.grouped_choices)
+
         # Map the string representation of choices to the underlying value.
         # Allows us to deal with eg. integer choices while supporting either
         # integer or string input, but still get the correct datatype out.
-        self.value_to_display_strings = {
-            str(key): value for key, value in self.choices.items()
+        self.choice_strings_to_values = {
+            str(label): value for value, label in self.choices
         }
-        self.display_strings_to_value = {
-            str(value): key for key, value in self.choices.items()
-        }
+        self.values_to_choice_strings = dict(self.choices)
 
-    choices = property(_get_choices, _set_choices)
+    choices = property(ChoiceField._get_choices, _set_choices)
 
 
 class MultiSlugRelatedField(RelatedField):
