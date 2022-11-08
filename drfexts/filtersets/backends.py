@@ -1,4 +1,4 @@
-import warnings
+import logging
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.core.exceptions import ImproperlyConfigured
@@ -27,6 +27,9 @@ from .filters import (
     IsNullFilter,
     MultipleSelectFilter,
 )
+
+logger = logging.get_logger(__name__)
+
 
 BOOLEAN_CHOICES = (
     ("false", "False"),
@@ -180,7 +183,7 @@ class AutoFilterBackend(DjangoFilterBackend):
                 try:
                     filter_spec = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field]
                 except KeyError:
-                    warnings.warn(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
+                    logger.debug(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
                     continue
 
                 extra = filter_spec.get("extra")
@@ -193,7 +196,7 @@ class AutoFilterBackend(DjangoFilterBackend):
                     kwargs.update(extra(field))
 
                 if "queryset" in kwargs and kwargs["queryset"] is None:
-                    warnings.warn(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
+                    logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
                     continue
 
                 overwrite_value = overwrite_kwargs.get(filter_name)
