@@ -237,6 +237,7 @@ class CreatedByField(CurrentUserField):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("verbose_name", "创建人")
+        kwargs.setdefault("editable", False)
         kwargs.setdefault("help_text", "该记录的创建者")
         kwargs.setdefault("related_name", "%(class)s_created_by")
         kwargs.setdefault("on_delete", models.CASCADE)
