@@ -2,7 +2,7 @@ from django.db import models
 
 
 class SimpleStatus(models.IntegerChoices):
-    VALID = 50, "已生效"
+    VALID = 50, "生效中"
     INVALID = 100, "已失效"
 
 

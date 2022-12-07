@@ -12,6 +12,7 @@ from .fields import (
     CreatedAtField,
     CreatedByField,
     DefaultCodeField,
+    SimpleStatusField,
     StatusField,
     UpdatedAtField,
     UpdatedByField,
@@ -98,6 +99,57 @@ class BaseCreatorModel(models.Model):
     """
 
     status = StatusField()  # 状态
+    created_by = CreatedByField()  # 创建者
+    updated_by = UpdatedByField()  # 修改者
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    objects = StatusQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+
+
+class SimpleBaseModel(models.Model):
+    """
+    标准抽象模型模型,可直接继承使用
+    """
+
+    status = SimpleStatusField()  # 状态
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    objects = StatusQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+        verbose_name = "基本模型"
+
+
+class SimpleBaseCodeModel(models.Model):
+    """
+    标准抽象模型模型(增加code),可直接继承使用
+    """
+
+    code = DefaultCodeField()  # 编号
+    status = SimpleStatusField()  # 状态
+    updated_at = UpdatedAtField()  # 修改时间
+    created_at = CreatedAtField()  # 创建时间
+
+    objects = StatusQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+        verbose_name = "基本模型(code)"
+
+
+class SimpleBaseCreatorModel(models.Model):
+    """
+    审计抽象模型模型,可直接继承使用
+    覆盖字段时, 字段名称请勿修改, 必须统一审计字段名称
+    """
+
+    status = SimpleStatusField()  # 状态
     created_by = CreatedByField()  # 创建者
     updated_by = UpdatedByField()  # 修改者
     updated_at = UpdatedAtField()  # 修改时间

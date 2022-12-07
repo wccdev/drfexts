@@ -9,6 +9,7 @@ from django.db import models
 from django.db.models import CASCADE
 from django_currentuser.db.models import CurrentUserField
 
+from .choices import SimpleStatus
 from .constants import AuditStatus, CommonStatus
 from .utils import get_serial_code
 
@@ -303,6 +304,18 @@ class StatusField(models.PositiveSmallIntegerField):
         kwargs.setdefault("choices", CommonStatus.choices)
         kwargs.setdefault("default", CommonStatus.VALID)
         kwargs.setdefault("help_text", "100：已失效，75：待失效，50：有效，25：暂停中，10：待生效，5：待提交，0：删除")
+        super().__init__(verbose_name, **kwargs)
+
+
+class SimpleStatusField(models.PositiveSmallIntegerField):
+    """
+    status = SimpleStatusField()
+    """
+
+    def __init__(self, verbose_name="状态", **kwargs):
+        kwargs.setdefault("choices", SimpleStatus.choices)
+        kwargs.setdefault("default", SimpleStatus.VALID)
+        kwargs.setdefault("help_text", "100：已失效，50：生效中")
         super().__init__(verbose_name, **kwargs)
 
 
