@@ -1,3 +1,9 @@
+## v0.20.0 (2022-12-07)
+
+### Feat
+
+- add new models with simple status
+
 ## v0.19.10 (2022-12-02)
 
 ### Fix
