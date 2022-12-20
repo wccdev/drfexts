@@ -130,9 +130,12 @@ class IsNotNullField(IsNullField):
 
 
 class ComplexPKRelatedField(PrimaryKeyRelatedField):
-    def __init__(self, pk_field_name="id", display_field="name", **kwargs):
+    def __init__(
+        self, pk_field_name="id", label_field="name", extra_fields=None, **kwargs
+    ):
         self.pk_field_name = pk_field_name
-        self.display_field = display_field
+        self.label_field = label_field
+        self.extra_fields = extra_fields
         self.instance = None
         super().__init__(**kwargs)
 
@@ -150,10 +153,20 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         return super().to_internal_value(data)
 
     def to_representation(self, value):
+        extra = {}
         try:
             attr_obj = get_attribute(self.instance, self.source_attrs)
             label = getattr(attr_obj, self.display_field, str(attr_obj))
+            if self.extra_fields:
+                extra = {
+                    field_name: getattr(attr_obj, field_name)
+                    for field_name in self.extra_fields
+                }
         except AttributeError:
             label = str(value)
 
-        return {self.pk_field_name: super().to_representation(value), "label": label}
+        return {
+            self.pk_field_name: super().to_representation(value),
+            "label": label,
+            **extra,
+        }
