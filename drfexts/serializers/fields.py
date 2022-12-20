@@ -156,7 +156,7 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         extra = {}
         try:
             attr_obj = get_attribute(self.instance, self.source_attrs)
-            label = getattr(attr_obj, self.display_field, str(attr_obj))
+            label = getattr(attr_obj, self.label_field, str(attr_obj))
             if self.extra_fields:
                 extra = {
                     field_name: getattr(attr_obj, field_name)
