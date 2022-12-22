@@ -1,3 +1,9 @@
+## v1.0.0 (2022-12-22)
+
+### Fix
+
+- **ComplexPKRelatedField**: optimize behavior
+
 ## v0.21.3 (2022-12-22)
 
 ### Fix
