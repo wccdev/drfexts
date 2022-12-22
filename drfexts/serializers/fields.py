@@ -159,7 +159,7 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
                 self.instance, self.source_attrs
             )  # attr_obj is a `PKOnlyObject` instance
         except AttributeError:
-            attr_obj = attr_obj  # attr_obj is a model instance
+            attr_obj = value  # attr_obj is a model instance
 
         label = getattr(attr_obj, self.label_field, str(attr_obj))
         if self.extra_fields:
