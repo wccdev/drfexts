@@ -155,15 +155,18 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
     def to_representation(self, value):
         extra = {}
         try:
-            attr_obj = get_attribute(self.instance, self.source_attrs)
-            label = getattr(attr_obj, self.label_field, str(attr_obj))
-            if self.extra_fields:
-                extra = {
-                    field_name: getattr(attr_obj, field_name)
-                    for field_name in self.extra_fields
-                }
+            attr_obj = get_attribute(
+                self.instance, self.source_attrs
+            )  # attr_obj is a `PKOnlyObject` instance
         except AttributeError:
-            label = str(value)
+            attr_obj = attr_obj  # attr_obj is a model instance
+
+        label = getattr(attr_obj, self.label_field, str(attr_obj))
+        if self.extra_fields:
+            extra = {
+                field_name: getattr(attr_obj, field_name)
+                for field_name in self.extra_fields
+            }
 
         return {
             self.pk_field_name: super().to_representation(value),
