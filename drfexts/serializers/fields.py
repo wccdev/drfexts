@@ -131,17 +131,16 @@ class IsNotNullField(IsNullField):
 
 class ComplexPKRelatedField(PrimaryKeyRelatedField):
     def __init__(
-        self, pk_field_name="id", label_field="name", extra_fields=None, **kwargs
+        self, pk_field_name="id", display_field_name="label", fields=(), **kwargs
     ):
         self.pk_field_name = pk_field_name
-        self.label_field = label_field
-        self.extra_fields = extra_fields
+        self.display_field_name = display_field_name
+        self.fields = fields
         self.instance = None
         super().__init__(**kwargs)
 
     def get_attribute(self, instance):
-        self.instance = instance
-        # Standard case, return the object instance.
+        self.instance = instance  # cache instance for `to_representation`
         return super().get_attribute(instance)
 
     def to_internal_value(self, data):
@@ -153,7 +152,6 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         return super().to_internal_value(data)
 
     def to_representation(self, value):
-        extra = {}
         try:
             attr_obj = get_attribute(
                 self.instance, self.source_attrs
@@ -161,15 +159,11 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         except AttributeError:
             attr_obj = value  # attr_obj is a model instance
 
-        label = getattr(attr_obj, self.label_field, str(attr_obj))
-        if self.extra_fields:
-            extra = {
-                field_name: getattr(attr_obj, field_name)
-                for field_name in self.extra_fields
-            }
+        data = {self.pk_field_name: super().to_representation(value)}
+        if self.display_field_name not in self.fields:
+            data[self.display_field_name] = str(attr_obj)
 
-        return {
-            self.pk_field_name: super().to_representation(value),
-            "label": label,
-            **extra,
-        }
+        for field_name in self.fields:
+            data[field_name] = getattr(attr_obj, field_name)
+
+        return data
