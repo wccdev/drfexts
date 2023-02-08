@@ -1,3 +1,9 @@
+## v1.0.1 (2023-02-08)
+
+### Refactor
+
+- change `max_page_size`
+
 ## v1.0.0 (2022-12-22)
 
 ### Fix
