@@ -104,7 +104,7 @@ class CustomJSONRenderer(BaseRenderer):
                     data = data[0]
                     try:
                         payload["msg"] = data["detail"]
-                    except KeyError:
+                    except (KeyError, TypeError):
                         payload["msg"] = str(data)
 
                     payload.pop("data", None)
