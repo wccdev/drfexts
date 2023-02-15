@@ -1,3 +1,9 @@
+## v1.0.2 (2023-02-15)
+
+### Fix
+
+- **renderers**: fix json response
+
 ## v1.0.1 (2023-02-08)
 
 ### Refactor
