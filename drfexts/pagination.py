@@ -63,6 +63,14 @@ class WithoutCountPagination(CustomPagination):
         Paginate a queryset if required, either returning a
         page object, or `None` if pagination is not configured for this view.
         """
+        page_num = request.query_params.get(self.page_query_param)
+        # if page is "all", then return max size data
+        if page_num == "all":
+            request.query_params._mutable = True
+            request.query_params[self.page_query_param] = 1
+            request.query_params[self.page_size_query_param] = self.max_page_size
+            request.query_params._mutable = False
+
         page_size = self.get_page_size(request)
         if not page_size:
             return None
@@ -123,11 +131,27 @@ class WithoutCountPagination(CustomPagination):
     def get_paginated_response(self, data):
         return Response(
             {
-                "list": data,
-                "next": self.get_next_link(),
                 "previous": self.get_previous_link(),
+                "next": self.get_next_link(),
+                "results": data,
             }
         )
+
+    def get_paginated_response_schema(self, schema):
+        return {
+            "type": "object",
+            "properties": {
+                "previous": {
+                    "type": "string",
+                    "example": "/api/users/?page_size=10&page=1",
+                },
+                "next": {
+                    "type": "string",
+                    "example": "/api/users/?page_size=10&page=3",
+                },
+                "results": schema,
+            },
+        }
 
 
 class BigPagePagination(CustomPagination):
