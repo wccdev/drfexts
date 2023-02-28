@@ -1,3 +1,9 @@
+## v1.1.0 (2023-02-28)
+
+### Feat
+
+- support filter by label field
+
 ## v1.0.3 (2023-02-19)
 
 ### Refactor
