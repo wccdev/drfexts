@@ -204,13 +204,14 @@ class AutoFilterBackend(DjangoFilterBackend):
                     logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
                     continue
 
-                if isinstance(field, ComplexPKRelatedField) and hasattr(
-                    field, "display_field"
+                if isinstance(field, ComplexPKRelatedField) and getattr(
+                    field, "display_field", None
                 ):
                     # add extra CharFilter for label
                     label_filter_name = f"{filter_name}.label"
+                    label_field_name = f"{field_name}__{field.display_field}"
                     filterset_fields[label_filter_name] = ExtendedCharFilter(
-                        field_name=field.display_field, label=field.label
+                        field_name=label_field_name, label=field.label
                     )
 
                 overwrite_value = overwrite_kwargs.get(filter_name)
