@@ -15,7 +15,12 @@ from rest_framework import serializers
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.utils.field_mapping import ClassLookupDict
 
-from ..serializers.fields import DisplayChoiceField, IsNotNullField, IsNullField
+from ..serializers.fields import (
+    ComplexPKRelatedField,
+    DisplayChoiceField,
+    IsNotNullField,
+    IsNullField,
+)
 from .filters import (
     ExtendedCharFilter,
     ExtendedDateFromToRangeFilter,
@@ -198,6 +203,15 @@ class AutoFilterBackend(DjangoFilterBackend):
                 if "queryset" in kwargs and kwargs["queryset"] is None:
                     logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
                     continue
+
+                if isinstance(field, ComplexPKRelatedField) and hasattr(
+                    field, "display_field"
+                ):
+                    # add extra CharFilter for label
+                    label_filter_name = f"{filter_name}.label"
+                    filterset_fields[label_filter_name] = ExtendedCharFilter(
+                        field_name=field.display_field, label=field.label
+                    )
 
                 overwrite_value = overwrite_kwargs.get(filter_name)
                 if overwrite_value:

@@ -131,11 +131,17 @@ class IsNotNullField(IsNullField):
 
 class ComplexPKRelatedField(PrimaryKeyRelatedField):
     def __init__(
-        self, pk_field_name="id", display_field_name="label", fields=(), **kwargs
+        self,
+        pk_field_name="id",
+        display_field=None,
+        display_field_name="label",
+        fields=(),
+        **kwargs,
     ):
         self.pk_field_name = pk_field_name
+        self.display_field = display_field
         self.display_field_name = display_field_name
-        self.fields = fields
+        self.extra_fields = fields
         self.instance = None
         super().__init__(**kwargs)
 
@@ -160,10 +166,13 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
             attr_obj = value  # attr_obj is a model instance
 
         data = {self.pk_field_name: super().to_representation(value)}
-        if self.display_field_name not in self.fields:
-            data[self.display_field_name] = str(attr_obj)
+        if self.display_field_name not in self.extra_fields:
+            if self.display_field:
+                data[self.display_field_name] = getattr(attr_obj, self.display_field)
+            else:
+                data[self.display_field_name] = str(attr_obj)
 
-        for field_name in self.fields:
+        for field_name in self.extra_fields:
             data[field_name] = getattr(attr_obj, field_name)
 
         return data
