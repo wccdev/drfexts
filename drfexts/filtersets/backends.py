@@ -119,6 +119,15 @@ class AutoFilterBackend(DjangoFilterBackend):
 
     filterset_base = InitialFilterSet
 
+    def filter_queryset(self, request, queryset, view):
+        fixed_query_params = request.query_params.copy()
+        for qp in request.query_params:
+            if qp.endswith("[]"):
+                fixed_query_params.setlist(qp.rstrip("[]"), fixed_query_params.pop(qp))
+
+        request._request.GET = fixed_query_params
+        return super().filter_queryset(request, queryset, view)
+
     def get_filterset_class(self, view, queryset=None):
         """
         Return the `FilterSet` class used to filter the queryset.
@@ -160,6 +169,9 @@ class AutoFilterBackend(DjangoFilterBackend):
         ):
             if isinstance(_serializer, serializers.ListSerializer):
                 _serializer = _serializer.child
+
+            if not hasattr(_serializer, "fields"):
+                return
 
             for filter_name, field in _serializer.fields.items():
                 if getattr(field, "write_only", False) or field.source == "*":
