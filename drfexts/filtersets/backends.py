@@ -120,12 +120,12 @@ class AutoFilterBackend(DjangoFilterBackend):
     filterset_base = InitialFilterSet
 
     def filter_queryset(self, request, queryset, view):
-        fixed_query_params = request.query_params.copy()
-        for qp in request.query_params:
-            if qp.endswith("[]"):
-                fixed_query_params.setlist(qp.rstrip("[]"), fixed_query_params.pop(qp))
-
-        request._request.GET = fixed_query_params
+        request.GET._mutable = True
+        for query_param in request.GET:
+            if query_param.endswith("[]"):
+                clean_name = query_param.rstrip("[]")
+                request.GET[clean_name] = request.GET.pop(query_param)
+        request.GET._mutable = False
         return super().filter_queryset(request, queryset, view)
 
     def get_filterset_class(self, view, queryset=None):
