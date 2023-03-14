@@ -124,7 +124,7 @@ class AutoFilterBackend(DjangoFilterBackend):
         for query_param in request.GET:
             if query_param.endswith("[]"):
                 clean_name = query_param.rstrip("[]")
-                request.GET[clean_name] = request.GET.pop(query_param)
+                request.GET.setlist(clean_name, request.GET.pop(query_param))
         request.GET._mutable = False
         return super().filter_queryset(request, queryset, view)
 
