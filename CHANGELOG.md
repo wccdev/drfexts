@@ -1,3 +1,9 @@
+## v1.1.4 (2023-03-14)
+
+### Fix
+
+- fix bugs in `AutoFilterBackend`
+
 ## v1.1.3 (2023-03-14)
 
 ### Fix
