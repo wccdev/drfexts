@@ -1,3 +1,9 @@
+## v1.1.3 (2023-03-14)
+
+### Fix
+
+- use `setlist` to set query params
+
 ## v1.1.2 (2023-03-02)
 
 ### Refactor
