@@ -1,3 +1,9 @@
+## v1.1.5 (2023-05-16)
+
+### Fix
+
+- support set custom ref_name
+
 ## v1.1.4 (2023-03-14)
 
 ### Fix
