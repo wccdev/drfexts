@@ -1,3 +1,9 @@
+## v1.1.6 (2023-06-21)
+
+### Fix
+
+- fix when set custom through model for
+
 ## v1.1.5 (2023-05-16)
 
 ### Fix
