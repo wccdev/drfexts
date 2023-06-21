@@ -211,6 +211,14 @@ class AutoFilterBackend(DjangoFilterBackend):
                 }
                 if callable(extra):
                     kwargs.update(extra(field))
+                # Fix when set custom through model for `MantToManyField`
+                if (
+                    isinstance(field, serializers.ManyRelatedField)
+                    and kwargs.get("queryset") is None
+                ):
+                    kwargs["queryset"] = getattr(
+                        field.root.Meta.model, field.source
+                    ).rel.model._default_manager.all()
 
                 if "queryset" in kwargs and kwargs["queryset"] is None:
                     logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
