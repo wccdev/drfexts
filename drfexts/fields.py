@@ -1,6 +1,7 @@
 import uuid
 from functools import partial
 
+from django import forms
 from django.conf import settings
 from django.contrib.contenttypes import fields as ct_fields
 from django.contrib.postgres.fields import ArrayField as PGArrayField
@@ -400,3 +401,31 @@ class GenericRelation(ct_fields.GenericRelation):
             verbose_name=verbose_name,
             **kwargs,
         )
+
+
+class ChoiceArrayField(ArrayField):
+    """
+    A field that allows us to store an array of choices.
+
+    Uses Django 4.2's postgres ArrayField
+    and a MultipleChoiceField for its formfield.
+
+    Usage:
+
+        choices = ChoiceArrayField(models.CharField(
+            max_length=...,
+            choices=(...,)),
+            default=[...]
+        )
+    """
+
+    def formfield(self, **kwargs):
+        defaults = {
+            "form_class": forms.MultipleChoiceField,
+            "choices": self.base_field.choices,
+        }
+        defaults.update(kwargs)
+        # Skip our parent's formfield implementation completely as we don't
+        # care for it.
+        # pylint:disable=bad-super-call
+        return super().formfield(**defaults)

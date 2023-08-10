@@ -1,14 +1,11 @@
 [tool.commitizen]
-version = "1.1.6"
+version = "1.1.7"
 tag_format = "v$major.$minor.$patch$prerelease"
-version_files = [
-    "pyproject.toml:version",
-    "drfexts/__init__.py"
-]
+version_files = ["pyproject.toml:version", "drfexts/__init__.py"]
 
 [tool.poetry]
 name = "drfexts"
-version = "1.1.6"
+version = "1.1.7"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -16,9 +13,7 @@ keywords = ["django", "restframework"]
 homepage = "https://github.com/aiden520/drfexts"
 repository = "https://github.com/aiden520/drfexts"
 license = "Apache-2.0"
-include = [
-    "LICENSE",
-]
+include = ["LICENSE"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0.0"
