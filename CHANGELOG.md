@@ -1,3 +1,9 @@
+## v1.2.1 (2023-08-10)
+
+### Fix
+
+- fix bugs when initializing ChoiceArrayField
+
 ## v1.2.0 (2023-08-10)
 
 ### Feat
