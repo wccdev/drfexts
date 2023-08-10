@@ -1,3 +1,10 @@
+## v1.2.0 (2023-08-10)
+
+### Feat
+
+- add new field: `ChoiceArrayField`
+- add new field: `ChoiceArrayField`
+
 ## v1.1.6 (2023-06-21)
 
 ### Fix
