@@ -47,32 +47,28 @@ class SequenceField(Field):
 
 class DisplayChoiceField(ChoiceField):
     """
-    Serialize: convert value into choice strings
-    Deserialize: convert choice strings into value
+    Serialize: convert values into choice strings
+    Deserialize: convert choice strings into values
     """
 
     def to_representation(self, value):
         if value in ("", None):
             return value
-        return self.value_to_display_strings.get(str(value), value)
-
-    def _get_choices(self):
-        return self._choices
+        return self.values_to_choice_strings.get(str(value), value)
 
     def _set_choices(self, choices):
         self.grouped_choices = to_choices_dict(choices)
         self._choices = flatten_choices_dict(self.grouped_choices)
+
         # Map the string representation of choices to the underlying value.
         # Allows us to deal with eg. integer choices while supporting either
         # integer or string input, but still get the correct datatype out.
-        self.value_to_display_strings = {
-            str(key): value for key, value in self.choices.items()
+        self.choice_strings_to_values = {
+            str(label): value for value, label in self.choices.items()
         }
-        self.display_strings_to_value = {
-            str(value): key for key, value in self.choices.items()
-        }
+        self.values_to_choice_strings = dict(self.choices)
 
-    choices = property(_get_choices, _set_choices)
+    choices = property(ChoiceField._get_choices, _set_choices)
 
 
 class MultiSlugRelatedField(RelatedField):
@@ -134,15 +130,23 @@ class IsNotNullField(IsNullField):
 
 
 class ComplexPKRelatedField(PrimaryKeyRelatedField):
-    def __init__(self, pk_field_name="id", display_field="name", **kwargs):
+    def __init__(
+        self,
+        pk_field_name="id",
+        display_field=None,
+        display_field_name="label",
+        fields=(),
+        **kwargs,
+    ):
         self.pk_field_name = pk_field_name
         self.display_field = display_field
+        self.display_field_name = display_field_name
+        self.extra_fields = fields
         self.instance = None
         super().__init__(**kwargs)
 
     def get_attribute(self, instance):
-        self.instance = instance
-        # Standard case, return the object instance.
+        self.instance = instance  # cache instance for `to_representation`
         return super().get_attribute(instance)
 
     def to_internal_value(self, data):
@@ -155,9 +159,20 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
 
     def to_representation(self, value):
         try:
-            attr_obj = get_attribute(self.instance, self.source_attrs)
-            label = getattr(attr_obj, self.display_field, str(attr_obj))
+            attr_obj = get_attribute(
+                self.instance, self.source_attrs
+            )  # attr_obj is a `PKOnlyObject` instance
         except AttributeError:
-            label = str(value)
+            attr_obj = value  # attr_obj is a model instance
 
-        return {self.pk_field_name: super().to_representation(value), "label": label}
+        data = {self.pk_field_name: super().to_representation(value)}
+        if self.display_field_name not in self.extra_fields:
+            if self.display_field:
+                data[self.display_field_name] = getattr(attr_obj, self.display_field)
+            else:
+                data[self.display_field_name] = str(attr_obj)
+
+        for field_name in self.extra_fields:
+            data[field_name] = getattr(attr_obj, field_name)
+
+        return data

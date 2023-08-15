@@ -1,3 +1,196 @@
+## v1.2.0 (2023-08-10)
+
+### Feat
+
+- add new field: `ChoiceArrayField`
+- add new field: `ChoiceArrayField`
+
+## v1.1.6 (2023-06-21)
+
+### Fix
+
+- fix when set custom through model for
+
+## v1.1.5 (2023-05-16)
+
+### Fix
+
+- support set custom ref_name
+
+## v1.1.4 (2023-03-14)
+
+### Fix
+
+- fix bugs in `AutoFilterBackend`
+
+## v1.1.3 (2023-03-14)
+
+### Fix
+
+- use `setlist` to set query params
+
+## v1.1.2 (2023-03-02)
+
+### Refactor
+
+- strip `[]` in url params
+
+## v1.1.1 (2023-02-28)
+
+### Fix
+
+- fix filter bugs
+
+## v1.1.0 (2023-02-28)
+
+### Feat
+
+- support filter by label field
+
+## v1.0.3 (2023-02-19)
+
+### Refactor
+
+- change the response of `WithoutCountPagination`
+
+## v1.0.2 (2023-02-15)
+
+### Fix
+
+- **renderers**: fix json response
+
+## v1.0.1 (2023-02-08)
+
+### Refactor
+
+- change `max_page_size`
+
+## v1.0.0 (2022-12-22)
+
+### Fix
+
+- **ComplexPKRelatedField**: optimize behavior
+
+## v0.21.3 (2022-12-22)
+
+### Fix
+
+- **ComplexPKRelatedField**: rename  to
+
+## v0.21.2 (2022-12-22)
+
+### Fix
+
+- **ComplexPKRelatedField**: support ManyToMant and ManyToOne relation
+
+## v0.21.1 (2022-12-20)
+
+### Fix
+
+- **serializers**: get  instead of
+
+## v0.21.0 (2022-12-20)
+
+### Feat
+
+- **serializers**: support to set  for
+
+## v0.20.0 (2022-12-07)
+
+### Feat
+
+- add new models with simple status
+
+## v0.19.10 (2022-12-02)
+
+### Fix
+
+- **CreatedByField**: set  to
+
+## v0.19.9 (2022-11-15)
+
+### Fix
+
+- fix function name
+
+### Refactor
+
+- format codes
+
+## v0.19.8 (2022-11-15)
+
+### Refactor
+
+- format codes
+
+## v0.19.7 (2022-11-04)
+
+### Refactor
+
+- remove  cache
+
+## v0.19.6 (2022-11-02)
+
+### Fix
+
+- **serializers**: fix abnormal behavior with
+
+## v0.19.5 (2022-11-02)
+
+### Fix
+
+- **serializers**: fix abnormal behavior with
+
+## v0.19.4 (2022-11-01)
+
+### Fix
+
+- **renderer**: change renderer error message
+
+## v0.19.3 (2022-10-21)
+
+### Fix
+
+- fix that custom method field will be skipped when exporting csv/xlsx
+
+## v0.19.2 (2022-10-19)
+
+### Fix
+
+- fix recursively calling  method
+
+## v0.19.1 (2022-10-19)
+
+### Fix
+
+- ignore KeyError when exporting file
+
+## v0.19.0 (2022-10-19)
+
+### Feat
+
+- pass viewset instance to  and
+
+## v0.18.4 (2022-10-17)
+
+### Fix
+
+- change package ref to url
+
+## v0.18.3 (2022-10-17)
+
+### Fix
+
+- change package ref to url
+
+## v0.18.2 (2022-10-17)
+
+### Fix
+
+- compatible with django 4.0
+
+## v0.18.1 (2022-10-17)
+
 ## v0.18.0 (2022-09-27)
 
 ### Feat

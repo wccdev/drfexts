@@ -1,4 +1,4 @@
-import warnings
+import logging
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.core.exceptions import ImproperlyConfigured
@@ -15,7 +15,12 @@ from rest_framework import serializers
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.utils.field_mapping import ClassLookupDict
 
-from ..serializers.fields import DisplayChoiceField, IsNotNullField, IsNullField
+from ..serializers.fields import (
+    ComplexPKRelatedField,
+    DisplayChoiceField,
+    IsNotNullField,
+    IsNullField,
+)
 from .filters import (
     ExtendedCharFilter,
     ExtendedDateFromToRangeFilter,
@@ -27,6 +32,9 @@ from .filters import (
     IsNullFilter,
     MultipleSelectFilter,
 )
+
+logger = logging.getLogger(__name__)
+
 
 BOOLEAN_CHOICES = (
     ("false", "False"),
@@ -111,6 +119,15 @@ class AutoFilterBackend(DjangoFilterBackend):
 
     filterset_base = InitialFilterSet
 
+    def filter_queryset(self, request, queryset, view):
+        fixed_query_params = request.query_params.copy()
+        for qp in request.query_params:
+            if qp.endswith("[]"):
+                fixed_query_params.setlist(qp.rstrip("[]"), fixed_query_params.pop(qp))
+
+        request._request.GET = fixed_query_params
+        return super().filter_queryset(request, queryset, view)
+
     def get_filterset_class(self, view, queryset=None):
         """
         Return the `FilterSet` class used to filter the queryset.
@@ -153,6 +170,9 @@ class AutoFilterBackend(DjangoFilterBackend):
             if isinstance(_serializer, serializers.ListSerializer):
                 _serializer = _serializer.child
 
+            if not hasattr(_serializer, "fields"):
+                return
+
             for filter_name, field in _serializer.fields.items():
                 if getattr(field, "write_only", False) or field.source == "*":
                     continue
@@ -180,7 +200,7 @@ class AutoFilterBackend(DjangoFilterBackend):
                 try:
                     filter_spec = FILTER_FOR_SERIALIZER_FIELD_DEFAULTS[field]
                 except KeyError:
-                    warnings.warn(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
+                    logger.debug(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
                     continue
 
                 extra = filter_spec.get("extra")
@@ -191,10 +211,28 @@ class AutoFilterBackend(DjangoFilterBackend):
                 }
                 if callable(extra):
                     kwargs.update(extra(field))
+                # Fix when set custom through model for `MantToManyField`
+                if (
+                    isinstance(field, serializers.ManyRelatedField)
+                    and kwargs.get("queryset") is None
+                ):
+                    kwargs["queryset"] = getattr(
+                        field.root.Meta.model, field.source
+                    ).rel.model._default_manager.all()
 
                 if "queryset" in kwargs and kwargs["queryset"] is None:
-                    warnings.warn(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
+                    logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
                     continue
+
+                if isinstance(field, ComplexPKRelatedField) and getattr(
+                    field, "display_field", None
+                ):
+                    # add extra CharFilter for label
+                    label_filter_name = f"{filter_name}.label"
+                    label_field_name = f"{field_name}__{field.display_field}"
+                    filterset_fields[label_filter_name] = ExtendedCharFilter(
+                        field_name=label_field_name, label=field.label
+                    )
 
                 overwrite_value = overwrite_kwargs.get(filter_name)
                 if overwrite_value:

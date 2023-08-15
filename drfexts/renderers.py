@@ -102,7 +102,11 @@ class CustomJSONRenderer(BaseRenderer):
                     payload["msg"] = "Invalid input."
                 except TypeError:
                     data = data[0]
-                    payload["msg"] = data["detail"]
+                    try:
+                        payload["msg"] = data["detail"]
+                    except (KeyError, TypeError):
+                        payload["msg"] = str(data)
+
                     payload.pop("data", None)
 
             response.status_code = (
@@ -119,7 +123,6 @@ class CustomJSONRenderer(BaseRenderer):
         if media_type == self.html_media_type:
             options |= orjson.OPT_INDENT_2
 
-        response._rendered_data = payload  # for loging response use
         serialized: bytes = orjson.dumps(payload, default=self.default, option=options)
         return serialized
 
@@ -269,7 +272,7 @@ class CustomXLSXRenderer(BaseExportRenderer):
         "header_font": Font(b=True),
         "header_fill": PatternFill("solid", start_color="87CEFA"),
         "header_alignment": Alignment(vertical="center"),
-        "header_height": 18,
+        "header_height": 20,
         "freeze_header": True,
         "freeze_panes": "A2",
     }

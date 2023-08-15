@@ -1,6 +1,7 @@
 import uuid
 from functools import partial
 
+from django import forms
 from django.conf import settings
 from django.contrib.contenttypes import fields as ct_fields
 from django.contrib.postgres.fields import ArrayField as PGArrayField
@@ -9,6 +10,7 @@ from django.db import models
 from django.db.models import CASCADE
 from django_currentuser.db.models import CurrentUserField
 
+from .choices import SimpleStatus
 from .constants import AuditStatus, CommonStatus
 from .utils import get_serial_code
 
@@ -237,6 +239,7 @@ class CreatedByField(CurrentUserField):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("verbose_name", "创建人")
+        kwargs.setdefault("editable", False)
         kwargs.setdefault("help_text", "该记录的创建者")
         kwargs.setdefault("related_name", "%(class)s_created_by")
         kwargs.setdefault("on_delete", models.CASCADE)
@@ -302,6 +305,18 @@ class StatusField(models.PositiveSmallIntegerField):
         kwargs.setdefault("choices", CommonStatus.choices)
         kwargs.setdefault("default", CommonStatus.VALID)
         kwargs.setdefault("help_text", "100：已失效，75：待失效，50：有效，25：暂停中，10：待生效，5：待提交，0：删除")
+        super().__init__(verbose_name, **kwargs)
+
+
+class SimpleStatusField(models.PositiveSmallIntegerField):
+    """
+    status = SimpleStatusField()
+    """
+
+    def __init__(self, verbose_name="状态", **kwargs):
+        kwargs.setdefault("choices", SimpleStatus.choices)
+        kwargs.setdefault("default", SimpleStatus.VALID)
+        kwargs.setdefault("help_text", "100：已失效，50：生效中")
         super().__init__(verbose_name, **kwargs)
 
 
@@ -386,3 +401,31 @@ class GenericRelation(ct_fields.GenericRelation):
             verbose_name=verbose_name,
             **kwargs,
         )
+
+
+class ChoiceArrayField(ArrayField):
+    """
+    A field that allows us to store an array of choices.
+
+    Uses Django 4.2's postgres ArrayField
+    and a MultipleChoiceField for its formfield.
+
+    Usage:
+
+        choices = ChoiceArrayField(models.CharField(
+            max_length=...,
+            choices=(...,)),
+            default=[...]
+        )
+    """
+
+    def formfield(self, **kwargs):
+        defaults = {
+            "form_class": forms.MultipleChoiceField,
+            "choices": self.base_field.choices,
+        }
+        defaults.update(kwargs)
+        # Skip our parent's formfield implementation completely as we don't
+        # care for it.
+        # pylint:disable=bad-super-call
+        return super().formfield(**defaults)
