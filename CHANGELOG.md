@@ -1,3 +1,9 @@
+## v1.3.0 (2023-08-21)
+
+### Feat
+
+- support parsing excel and csv files
+
 ## v1.2.1 (2023-08-10)
 
 ### Fix
