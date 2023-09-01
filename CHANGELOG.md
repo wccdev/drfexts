@@ -1,3 +1,9 @@
+## v1.4.0 (2023-09-01)
+
+### Feat
+
+- **fields**: add default db comment
+
 ## v1.3.0 (2023-08-21)
 
 ### Feat
