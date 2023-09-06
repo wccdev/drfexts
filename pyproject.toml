@@ -1,11 +1,11 @@
 [tool.commitizen]
-version = "1.2.0"
+version = "1.4.0"
 tag_format = "v$major.$minor.$patch$prerelease"
 version_files = ["pyproject.toml:version", "drfexts/__init__.py"]
 
 [tool.poetry]
 name = "drfexts"
-version = "1.2.0"
+version = "1.4.0"
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
@@ -17,7 +17,7 @@ include = ["LICENSE"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0.0"
-django = ">=3.2"
+django = ">=4.2"
 django-storages = ">=1.12.3"
 django-filter = ">=21.1"
 djangorestframework = ">=3.12.4"

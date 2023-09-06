@@ -1,3 +1,21 @@
+## v1.4.0 (2023-09-01)
+
+### Feat
+
+- **fields**: add default db comment
+
+## v1.3.0 (2023-08-21)
+
+### Feat
+
+- support parsing excel and csv files
+
+## v1.2.1 (2023-08-10)
+
+### Fix
+
+- fix bugs when initializing ChoiceArrayField
+
 ## v1.2.0 (2023-08-10)
 
 ### Feat

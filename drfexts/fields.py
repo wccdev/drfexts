@@ -18,6 +18,11 @@ from .utils import get_serial_code
 class DefaultHelpTextMixin:
     def __init__(self, verbose_name, *args, **kwargs):
         kwargs.setdefault("help_text", verbose_name)
+        if "choices" in kwargs:
+            kwargs.setdefault("db_comment", f"{verbose_name}: {kwargs['choices']}")
+        else:
+            kwargs.setdefault("db_comment", verbose_name)
+
         super().__init__(verbose_name, *args, **kwargs)
 
 
@@ -25,6 +30,11 @@ class NullHelpTextMixin:
     def __init__(self, verbose_name, *args, **kwargs):
         kwargs["null"] = False
         kwargs.setdefault("help_text", verbose_name)
+        if "choices" in kwargs:
+            kwargs.setdefault("db_comment", f"{verbose_name}: {kwargs['choices']}")
+        else:
+            kwargs.setdefault("db_comment", verbose_name)
+
         super().__init__(verbose_name, *args, **kwargs)
 
 
@@ -50,6 +60,7 @@ class RelatedNameCheckMixin:
 
 class AutoField(models.AutoField):
     def __init__(self, verbose_name="主键", **kwargs):
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", verbose_name)
         super().__init__(verbose_name, **kwargs)
 
@@ -145,6 +156,7 @@ class JSONField(DefaultHelpTextMixin, models.JSONField):
 class ArrayField(PGArrayField):
     def __init__(self, verbose_name, base_field, **kwargs):
         kwargs.setdefault("help_text", verbose_name)
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("verbose_name", verbose_name)
         super().__init__(base_field, **kwargs)
 
@@ -153,6 +165,7 @@ class AutoUUIDField(models.UUIDField):
     def __init__(self, verbose_name="主键", **kwargs):
         kwargs["blank"] = True
         kwargs["default"] = uuid.uuid4
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", verbose_name)
         kwargs.setdefault("primary_key", True)
         super().__init__(verbose_name, **kwargs)
@@ -171,6 +184,7 @@ class DefaultCodeField(models.CharField):
         kwargs["default"] = partial(get_serial_code, prefix)
         kwargs["max_length"] = self.DEFAULT_LENGTH + len(prefix)
         kwargs["editable"] = False
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", verbose_name)
         super().__init__(verbose_name, **kwargs)
 
@@ -189,6 +203,7 @@ class DescriptionField(models.TextField):
 
     def __init__(self, verbose_name="描述", **kwargs):
         kwargs.setdefault("blank", True)
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", verbose_name)
         super().__init__(verbose_name, **kwargs)
 
@@ -202,6 +217,7 @@ class UserForeignKeyField(models.ForeignKey):
         to = to or settings.AUTH_USER_MODEL
         on_delete = on_delete or CASCADE
         kwargs.setdefault("db_constraint", False)
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", verbose_name)
         super().__init__(to=to, verbose_name=verbose_name, on_delete=on_delete, **kwargs)
 
@@ -214,6 +230,7 @@ class UpdatedAtField(models.DateTimeField):
     def __init__(self, verbose_name="修改时间", **kwargs):
         kwargs["editable"] = False
         kwargs["auto_now"] = True
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", "该记录的最后修改时间")
         kwargs.setdefault("blank", True)
         super().__init__(verbose_name, **kwargs)
@@ -227,6 +244,7 @@ class CreatedAtField(models.DateTimeField):
     def __init__(self, verbose_name="创建时间", **kwargs):
         kwargs["editable"] = False
         kwargs["auto_now_add"] = True
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", "该记录的创建时间")
         kwargs.setdefault("blank", True)
         super().__init__(verbose_name, **kwargs)
@@ -239,6 +257,7 @@ class CreatedByField(CurrentUserField):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("verbose_name", "创建人")
+        kwargs.setdefault("db_comment", "创建人")
         kwargs.setdefault("editable", False)
         kwargs.setdefault("help_text", "该记录的创建者")
         kwargs.setdefault("related_name", "%(class)s_created_by")
@@ -258,6 +277,7 @@ class UpdatedByField(CurrentUserField):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("on_update", True)
         kwargs.setdefault("verbose_name", "修改人")
+        kwargs.setdefault("db_comment", "修改人")
         kwargs.setdefault("help_text", "该记录的修改人")
         kwargs.setdefault("related_name", "%(class)s_updated_by")
         kwargs.setdefault("on_delete", models.CASCADE)
@@ -278,6 +298,7 @@ class CreatorCharField(models.CharField):
         kwargs.setdefault("null", True)
         kwargs.setdefault("blank", True)
         kwargs.setdefault("verbose_name", "创建者")
+        kwargs.setdefault("db_comment", "创建者")
         kwargs.setdefault("help_text", "该记录的创建者")
         super().__init__(*args, **kwargs)
 
@@ -292,6 +313,7 @@ class ModifierCharField(models.CharField):
         kwargs.setdefault("null", True)
         kwargs.setdefault("blank", True)
         kwargs.setdefault("verbose_name", "修改者")
+        kwargs.setdefault("db_comment", "修改者")
         kwargs.setdefault("help_text", "该记录最后修改者")
         super().__init__(*args, **kwargs)
 
@@ -302,6 +324,7 @@ class StatusField(models.PositiveSmallIntegerField):
     """
 
     def __init__(self, verbose_name="状态", **kwargs):
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("choices", CommonStatus.choices)
         kwargs.setdefault("default", CommonStatus.VALID)
         kwargs.setdefault("help_text", "100：已失效，75：待失效，50：有效，25：暂停中，10：待生效，5：待提交，0：删除")
@@ -326,6 +349,7 @@ class AuditStatusField(models.PositiveSmallIntegerField):
     """
 
     def __init__(self, verbose_name="审核状态", **kwargs):
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("choices", AuditStatus.choices)
         kwargs.setdefault("null", True)
         kwargs.setdefault("blank", True)
@@ -336,6 +360,7 @@ class AuditStatusField(models.PositiveSmallIntegerField):
 class VirtualForeignKey(models.ForeignKey):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs["db_constraint"] = False
 
         if kwargs.get("null"):
@@ -350,6 +375,7 @@ class VirtualForeignKey(models.ForeignKey):
 class OneToOneField(models.OneToOneField):
     def __init__(self, verbose_name, to, *args, **kwargs):
         kwargs.setdefault("verbose_name", verbose_name)
+        kwargs.setdefault("db_comment", verbose_name)
         kwargs["db_constraint"] = False
 
         if kwargs.get("null"):
@@ -403,29 +429,34 @@ class GenericRelation(ct_fields.GenericRelation):
         )
 
 
+class _TypedMultipleChoiceField(forms.TypedMultipleChoiceField):
+    def __init__(self, *args, **kwargs):
+        kwargs.pop("base_field", None)
+        kwargs.pop("max_length", None)
+        super().__init__(*args, **kwargs)
+
+
 class ChoiceArrayField(ArrayField):
     """
     A field that allows us to store an array of choices.
 
     Uses Django 4.2's postgres ArrayField
-    and a MultipleChoiceField for its formfield.
+    and a TypeMultipleChoiceField for its formfield.
 
     Usage:
 
-        choices = ChoiceArrayField(models.CharField(
-            max_length=...,
-            choices=(...,)),
-            default=[...]
+        choices = ChoiceArrayField(
+            models.CharField(max_length=..., choices=(...,)), blank=[...], default=[...]
         )
     """
 
     def formfield(self, **kwargs):
         defaults = {
-            "form_class": forms.MultipleChoiceField,
+            "form_class": _TypedMultipleChoiceField,
             "choices": self.base_field.choices,
+            "coerce": self.base_field.to_python,
         }
         defaults.update(kwargs)
-        # Skip our parent's formfield implementation completely as we don't
-        # care for it.
+        # Skip our parent's formfield implementation completely as we don't care for it.
         # pylint:disable=bad-super-call
         return super().formfield(**defaults)
