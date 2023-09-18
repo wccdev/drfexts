@@ -100,3 +100,13 @@ def get_serializer_field(serializer, field_path):
             break
 
     return serializer, source_attrs, is_skipped
+
+
+def get_error_msg(data: dict | list, default_field_key):
+    if isinstance(data, dict):
+        return data.get("detail", default_field_key)
+    elif isinstance(data, list):
+        data = data[0]
+        return get_error_msg(data)
+
+    return str(data)

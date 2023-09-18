@@ -19,6 +19,8 @@ from rest_framework.renderers import BaseRenderer
 from rest_framework.settings import api_settings
 from rest_framework.status import is_success
 
+from .utils import get_error_msg
+
 __all__ = ["CustomJSONRenderer", "CustomCSVRenderer", "CustomXLSXRenderer"]
 
 
@@ -96,18 +98,13 @@ class CustomJSONRenderer(BaseRenderer):
 
             if not is_success(response.status_code):
                 try:
-                    payload["msg"] = data["detail"]
-                    payload.pop("data", None)
-                except KeyError:
-                    payload["msg"] = "Invalid input."
-                except TypeError:
-                    data = data[0]
-                    try:
-                        payload["msg"] = data["detail"]
-                    except (KeyError, TypeError):
-                        payload["msg"] = str(data)
+                    payload["msg"] = get_error_msg(
+                        data, api_settings.NON_FIELD_ERRORS_KEY
+                    )
+                except Exception:
+                    payload["msg"] = str(data)
 
-                    payload.pop("data", None)
+                payload.pop("data", None)
 
             response.status_code = (
                 status.HTTP_200_OK
