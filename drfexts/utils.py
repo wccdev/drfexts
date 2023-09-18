@@ -106,8 +106,8 @@ def get_error_msg(data: dict | list, default_field_key):
     if isinstance(data, dict):
         msg = data.get("detail") or data.get(default_field_key)
         if isinstance(msg, list):
-            return "/n".join(list)
-        return msg
+            return "/n".join(str(s) for s in msg)
+        return str(msg)
     elif isinstance(data, list):
         data = data[0]
         return get_error_msg(data)
