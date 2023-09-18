@@ -104,7 +104,10 @@ def get_serializer_field(serializer, field_path):
 
 def get_error_msg(data: dict | list, default_field_key):
     if isinstance(data, dict):
-        return data.get("detail") or data.get(default_field_key)
+        msg = data.get("detail") or data.get(default_field_key)
+        if isinstance(msg, list):
+            return "/n".join(list)
+        return msg
     elif isinstance(data, list):
         data = data[0]
         return get_error_msg(data)
