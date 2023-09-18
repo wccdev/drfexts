@@ -1,3 +1,9 @@
+## v1.4.2 (2023-09-18)
+
+### Fix
+
+- support NON_FIELD_ERRORS_KEY
+
 ## v1.4.1 (2023-09-18)
 
 ### Fix
