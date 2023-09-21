@@ -1,3 +1,9 @@
+## v1.4.6 (2023-09-21)
+
+### Fix
+
+- **exception**: get error message from ErrorDetail
+
 ## v1.4.5 (2023-09-18)
 
 ### Fix
