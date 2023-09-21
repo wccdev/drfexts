@@ -7,7 +7,7 @@ from datetime import datetime
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.transaction import atomic
 from django.utils import timezone
-from rest_framework import serializers
+from rest_framework import exceptions, serializers
 
 
 class CustomEncoder(DjangoJSONEncoder):
@@ -114,6 +114,8 @@ def get_error_msg(data: dict | list, default_field_key):
             errors.append(f"{k}: {'/n'.join(str(s) for s in v)}")
 
         return "/n".join(errors)
+    elif isinstance(data, exceptions.ErrorDetail):
+        return str(data)
     elif isinstance(data, list):
         data = data[0]
         return get_error_msg(data)
