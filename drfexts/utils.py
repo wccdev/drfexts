@@ -114,7 +114,7 @@ def get_error_msg(data: dict | list, default_field_key):
             errors.append(f"{k}: {'/n'.join(str(s) for s in v)}")
 
         return "/n".join(errors)
-    elif isinstance(data, exceptions.exceptions):
+    elif isinstance(data, exceptions.ErrorDetail):
         return str(data)
     elif isinstance(data, list):
         data = data[0]
