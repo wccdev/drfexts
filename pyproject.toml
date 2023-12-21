@@ -16,8 +16,8 @@ license = "Apache-2.0"
 include = ["LICENSE"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<4.0.0"
-django = ">=4.2"
+python = ">=3.9,<4.0.0"
+django = "^5.0"
 django-storages = ">=1.12.3"
 django-filter = ">=21.1"
 djangorestframework = ">=3.12.4"

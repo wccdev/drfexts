@@ -8,6 +8,7 @@ from django.contrib.postgres.fields import ArrayField as PGArrayField
 from django.core import checks
 from django.db import models
 from django.db.models import CASCADE
+from django.db.models.functions import Now
 from django_currentuser.db.models import CurrentUserField
 
 from .choices import SimpleStatus
@@ -230,6 +231,7 @@ class UpdatedAtField(models.DateTimeField):
     def __init__(self, verbose_name="修改时间", **kwargs):
         kwargs["editable"] = False
         kwargs["auto_now"] = True
+        kwargs["db_default"] = Now()
         kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", "该记录的最后修改时间")
         kwargs.setdefault("blank", True)
@@ -244,6 +246,7 @@ class CreatedAtField(models.DateTimeField):
     def __init__(self, verbose_name="创建时间", **kwargs):
         kwargs["editable"] = False
         kwargs["auto_now_add"] = True
+        kwargs["db_default"] = Now()
         kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", "该记录的创建时间")
         kwargs.setdefault("blank", True)
