@@ -1,3 +1,9 @@
+## v2.0.0 (2023-12-21)
+
+### Feat
+
+- **fields**: add db_default support
+
 ## v1.4.8 (2023-09-21)
 
 ### Fix
