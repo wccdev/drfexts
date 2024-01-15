@@ -1,3 +1,9 @@
+## v3.0.0 (2024-01-15)
+
+### Feat
+
+- **serializers**: support setting custom serializer fields
+
 ## v2.0.0 (2023-12-21)
 
 ### Feat
