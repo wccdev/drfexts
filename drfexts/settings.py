@@ -6,7 +6,7 @@ REST_FRAMEWORK = {
         "permissions.IsAuthenticatedWriteOrReadOnly",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # 'oauth2_provider.contrib.rest_framework.OAuth2Authentication',  # Own oauth server
+        # 'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
         "client_authentication.ApiTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.BasicAuthentication",
@@ -28,3 +28,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
 }
+
+
+DRFEXTS_SERIALIZER_CHOICE_FIELD = "rest_framework.serializers.ChoiceField"
+DRFEXTS_SERIALIZER_RELATED_FIELD = "drfexts.serializers.fields.ComplexPKRelatedField"
