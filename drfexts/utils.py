@@ -6,6 +6,7 @@ from datetime import datetime
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.transaction import atomic
+from django.http import QueryDict
 from django.utils import timezone
 from rest_framework import exceptions, serializers
 
@@ -121,3 +122,20 @@ def get_error_msg(data: dict | list, default_field_key):
         return get_error_msg(data, default_field_key)
 
     return str(data)
+
+
+def get_split_query_params(query_params: QueryDict, field_name: str) -> list[str]:
+    """
+    获取分割后的查询参数
+    :param query_params:
+    :param field_name:
+    :return:
+    """
+    value = query_params.getlist(field_name)
+    if not value:
+        value = query_params.get(field_name + "[]")
+
+    if value and len(value) == 1:
+        return value[0].split(",")
+
+    return []
