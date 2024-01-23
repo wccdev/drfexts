@@ -1,3 +1,9 @@
+## v3.1.1 (2024-01-23)
+
+### Fix
+
+- fix querying on ComplexPKRelatedField
+
 ## v3.1.0 (2024-01-19)
 
 ### Feat
