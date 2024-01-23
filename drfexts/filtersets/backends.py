@@ -190,7 +190,9 @@ class AutoFilterBackend(DjangoFilterBackend):
                 ):
                     continue
 
-                if isinstance(field, serializers.BaseSerializer):
+                if isinstance(
+                    field, (serializers.BaseSerializer, ComplexPKRelatedField)
+                ):
                     filters_from_serializer(
                         field,
                         field_name_prefix=field_name,

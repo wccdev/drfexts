@@ -1,6 +1,8 @@
 import collections
+from collections import OrderedDict
+from functools import cached_property
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.fields import (
@@ -11,6 +13,8 @@ from rest_framework.fields import (
     to_choices_dict,
 )
 from rest_framework.relations import PrimaryKeyRelatedField, RelatedField
+from rest_framework.utils.field_mapping import ClassLookupDict
+from rest_framework.utils.serializer_helpers import BindingDict
 
 __all__ = (
     "SequenceField",
@@ -144,6 +148,63 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         self.extra_fields = fields
         self.instance = None
         super().__init__(**kwargs)
+
+    @cached_property
+    def fields(self):
+        """
+        A dictionary of {field_name: field_instance}.
+        """
+        # `fields` is evaluated lazily. We do this to ensure that we don't
+        # have issues importing modules that use ModelSerializers as fields,
+        # even if Django's app-loading stage has not yet run.
+        fields = BindingDict(self)
+        for key, value in self.get_fields().items():
+            fields[key] = value
+        return fields
+
+    def get_fields(self):
+        """
+        Return the dict of field names -> field instances that should be
+        used for `self.fields` when instantiating the serializer.
+        """
+
+        if self.queryset is not None:
+            model = self.queryset.model
+        else:
+            assert hasattr(
+                self.parent, "Meta"
+            ), 'Class {serializer_class} missing "Meta" attribute'.format(
+                serializer_class=self.__class__.__name__
+            )
+            assert hasattr(
+                self.parent.Meta, "model"
+            ), 'Class {serializer_class} missing "Meta.model" attribute'.format(
+                serializer_class=self.__class__.__name__
+            )
+
+            parent_model = getattr(self.parent.Meta, "model")
+            model = parent_model._meta.get_field(self.source).related_model
+
+        # Determine the fields that should be included on the serializer.
+        fields = OrderedDict()
+        field_mapping = ClassLookupDict(
+            serializers.ModelSerializer.serializer_field_mapping
+        )
+
+        for field_name in self.extra_fields:
+            if field_name == self.pk_field_name:
+                continue
+
+            try:
+                model_field = model._meta.get_field(field_name)
+            except FieldDoesNotExist:
+                continue
+
+            fields[field_name] = field_mapping[model_field](
+                read_only=True, label=model_field.verbose_name
+            )
+
+        return fields
 
     def get_attribute(self, instance):
         self.instance = instance  # cache instance for `to_representation`
