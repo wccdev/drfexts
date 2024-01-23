@@ -190,6 +190,11 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         field_mapping = ClassLookupDict(
             serializers.ModelSerializer.serializer_field_mapping
         )
+        # add extra CharFilter for label
+        if self.display_field and self.display_field not in self.extra_fields:
+            fields[self.display_field_name] = serializers.CharField(
+                source=self.display_field, read_only=True
+            )
 
         for field_name in self.extra_fields:
             if field_name == self.pk_field_name:
@@ -201,7 +206,9 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
                 continue
 
             fields[field_name] = field_mapping[model_field](
-                read_only=True, label=model_field.verbose_name
+                read_only=True,
+                label=model_field.verbose_name,
+                help_text=model_field.help_text,
             )
 
         return fields

@@ -213,6 +213,7 @@ class AutoFilterBackend(DjangoFilterBackend):
                 }
                 if callable(extra):
                     kwargs.update(extra(field))
+
                 # Fix when set custom through model for `MantToManyField`
                 if (
                     isinstance(field, serializers.ManyRelatedField)
@@ -225,16 +226,6 @@ class AutoFilterBackend(DjangoFilterBackend):
                 if "queryset" in kwargs and kwargs["queryset"] is None:
                     logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
                     continue
-
-                if isinstance(field, ComplexPKRelatedField) and getattr(
-                    field, "display_field", None
-                ):
-                    # add extra CharFilter for label
-                    label_filter_name = f"{filter_name}.label"
-                    label_field_name = f"{field_name}__{field.display_field}"
-                    filterset_fields[label_filter_name] = ExtendedCharFilter(
-                        field_name=label_field_name, label=field.label
-                    )
 
                 overwrite_value = overwrite_kwargs.get(filter_name)
                 if overwrite_value:
