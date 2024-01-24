@@ -1,3 +1,9 @@
+## v3.2.1 (2024-01-24)
+
+### Fix
+
+- remove field mappings for ChoiceAarrayField
+
 ## v3.2.0 (2024-01-24)
 
 ### Feat
