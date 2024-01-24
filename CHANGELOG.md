@@ -1,3 +1,9 @@
+## v3.2.0 (2024-01-24)
+
+### Feat
+
+- **serializers**: support ArrayChoiceField
+
 ## v3.1.2 (2024-01-23)
 
 ### Fix
