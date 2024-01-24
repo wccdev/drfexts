@@ -3,9 +3,6 @@ from django.utils.module_loading import import_string
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.serializers import ModelSerializer
 
-from drfexts.fields import ChoiceArrayField
-from drfexts.serializers.fields import MultipleChoiceObjectField
-
 from ..utils import get_split_query_params
 
 # Get custom fields
@@ -36,11 +33,6 @@ class WCCModelSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     serializer_choice_field = SERIALIZER_CHOICE_FIELD
     serializer_related_field = SERIALIZER_RELATED_FIELD
     serializer_related_to_field = SERIALIZER_RELATED_TO_FIELD
-
-    # Generate fields for custom models fields
-    serializer_field_mapping = ModelSerializer.serializer_field_mapping | {
-        ChoiceArrayField: MultipleChoiceObjectField,
-    }
 
     # _SELECT_RELATED_FIELDS = []
     # _PREFETCH_RELATED_FIELDS = []
