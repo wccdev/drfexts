@@ -4,15 +4,20 @@ from functools import cached_property
 
 from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.fields import (
+    CharField,
     ChoiceField,
     Field,
+    empty,
     flatten_choices_dict,
     get_attribute,
     to_choices_dict,
 )
 from rest_framework.relations import PrimaryKeyRelatedField, RelatedField
+from rest_framework.serializers import Serializer
+from rest_framework.utils import html
 from rest_framework.utils.field_mapping import ClassLookupDict
 from rest_framework.utils.serializer_helpers import BindingDict
 
@@ -23,6 +28,8 @@ __all__ = (
     "IsNullField",
     "IsNotNullField",
     "ComplexPKRelatedField",
+    "ChoiceObjectField",
+    "MultipleChoiceObjectField",
 )
 
 
@@ -73,6 +80,70 @@ class DisplayChoiceField(ChoiceField):
         self.values_to_choice_strings = dict(self.choices)
 
     choices = property(ChoiceField._get_choices, _set_choices)
+
+
+class ChoiceSerializer(Serializer):
+    id = CharField(label="值")
+    label = CharField(required=False, label="键")
+    color = CharField(required=False, label="颜色", allow_null=True)
+
+
+@extend_schema_field(ChoiceSerializer())
+class ChoiceObjectField(ChoiceField):
+    def to_internal_value(self, data):
+        if isinstance(data, dict):
+            data = data.get("id")
+
+        return super().to_internal_value(data)
+
+    def to_representation(self, value):
+        if value in ("", None):
+            return None
+
+        label = next(
+            (v for k, v in self.choices.items() if str(k) == str(value)), str(value)
+        )
+        return {"id": value, "label": label, "color": getattr(label, "color", None)}
+
+
+@extend_schema_field(ChoiceSerializer(many=True))
+class MultipleChoiceObjectField(ChoiceObjectField):
+    default_error_messages = {
+        "invalid_choice": _('"{input}" is not a valid choice.'),
+        "not_a_list": _('Expected a list of objects but got type "{input_type}".'),
+        "empty": _("This selection may not be empty."),
+    }
+    default_empty_html = []
+
+    def __init__(self, **kwargs):
+        self.allow_empty = kwargs.pop("allow_empty", True)
+        super().__init__(**kwargs)
+
+    def get_value(self, dictionary):
+        if self.field_name not in dictionary:
+            if getattr(self.root, "partial", False):
+                return empty
+        # We override the default field access in order to support
+        # lists in HTML forms.
+        if html.is_html_input(dictionary):
+            return dictionary.getlist(self.field_name)
+        return dictionary.get(self.field_name, empty)
+
+    def to_internal_value(self, data):
+        if isinstance(data, str) or not hasattr(data, "__iter__"):
+            self.fail("not_a_list", input_type=type(data).__name__)
+        if not self.allow_empty and len(data) == 0:
+            self.fail("empty")
+
+        return {
+            # Arguments for super() are needed because of scoping inside
+            # comprehensions.
+            super().to_internal_value(item)
+            for item in data
+        }
+
+    def to_representation(self, value):
+        return {super().to_representation(item) for item in value}
 
 
 class MultiSlugRelatedField(RelatedField):
