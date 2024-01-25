@@ -22,6 +22,7 @@ from ..serializers.fields import (
     IsNullField,
 )
 from .filters import (
+    ArrayMultipleChoiceFilter,
     ExtendedCharFilter,
     ExtendedDateFromToRangeFilter,
     ExtendedDisplayMultipleChoiceFilter,
@@ -76,8 +77,8 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
             "extra": lambda f: {"lookup_expr": "icontains"},
         },
         serializers.ListField: {
-            "filter_class": CharFilter,
-            "extra": lambda f: {"lookup_expr": "contains"},
+            "filter_class": MultipleSelectFilter,
+            "extra": lambda f: {"lookup_expr": "overlap"},
         },
         IsNotNullField: {"filter_class": IsNotNullFilter},
         IsNullField: {"filter_class": IsNullFilter},
@@ -204,6 +205,17 @@ class AutoFilterBackend(DjangoFilterBackend):
                 except KeyError:
                     logger.debug(f"{filter_name} 字段未找到过滤器, 跳过自动成filter!")
                     continue
+
+                if isinstance(field, serializers.ListField) and isinstance(
+                    field.child, serializers.ChoiceField
+                ):
+                    filter_spec = {
+                        "filter_class": ArrayMultipleChoiceFilter,
+                        "extra": lambda f: {
+                            "choices": list(f.child.choices.items()),
+                            "distinct": False,
+                        },
+                    }
 
                 extra = filter_spec.get("extra")
                 kwargs = {

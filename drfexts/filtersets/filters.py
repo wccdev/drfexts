@@ -56,7 +56,10 @@ class SearchFilter(CharFilter):
 class MultipleValueFilter(Filter):
     """
     支持传入多个值查询一个字段
-    使用示例：stage_name = MultipleValueFilter(field_class=CharField, field_name="stage__name", lookup_expr="icontains")
+    使用示例：
+        stage_name = MultipleValueFilter(
+          field_class=CharField, field_name="stage__name", lookup_expr="icontains"
+        )
     支持传参方式：
         1. ?stage_name[]=123&stage_name[]=124
         2. ?stage_name=123&stage_name=125
@@ -193,6 +196,30 @@ class ExtendedMultipleChoiceFilter(MultipleChoiceFilter):
             return True
 
         return False
+
+
+class ArrayMultipleChoiceFilter(ExtendedMultipleChoiceFilter):
+    """
+    This filter performs &&(by default) query
+    on the selected options.
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("lookup_expr", "overlap")
+        kwargs.setdefault("distinct", False)
+        super().__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        if value in EMPTY_VALUES:
+            return qs
+        if self.is_noop(qs, value):
+            return qs
+
+        if self.distinct:
+            qs = qs.distinct()
+        lookup = "%s__%s" % (self.field_name, self.lookup_expr)
+        qs = self.get_method(qs)(**{lookup: value})
+        return qs
 
 
 class ExtendedDisplayMultipleChoiceFilter(ExtendedMultipleChoiceFilter):
