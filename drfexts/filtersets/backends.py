@@ -74,7 +74,7 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         serializers.RelatedField: {"filter_class": MultipleSelectFilter},
         serializers.JSONField: {
             "filter_class": CharFilter,
-            "extra": lambda f: {"lookup_expr": "icontains"},
+            "extra": lambda f: {"lookup_expr": "contains"},
         },
         serializers.ListField: {
             "filter_class": MultipleSelectFilter,

@@ -76,7 +76,7 @@ class ExtendedDateRangeWidget(ExtendedRangeWidget):
 
 class LookupTextInput(TextInput):
     suffix = "equal"
-    default_lookup_expr = "icontains"
+    default_lookup_expr = "contains"
 
     def suffixed(self, name):
         return f"{name}_{self.suffix}"
