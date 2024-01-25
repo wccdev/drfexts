@@ -1,3 +1,9 @@
+## v3.2.2 (2024-01-25)
+
+### Fix
+
+- fix ChoiceArrayField query
+
 ## v3.2.1 (2024-01-24)
 
 ### Fix
