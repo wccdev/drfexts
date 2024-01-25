@@ -1,3 +1,9 @@
+## v3.2.3 (2024-01-25)
+
+### Fix
+
+- use contains as default lookup method for CharField
+
 ## v3.2.2 (2024-01-25)
 
 ### Fix
