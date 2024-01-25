@@ -1,3 +1,9 @@
+## v3.2.6 (2024-01-25)
+
+### Fix
+
+- change the default lookup for SearchFilter to contains
+
 ## v3.2.5 (2024-01-25)
 
 ### Fix
