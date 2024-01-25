@@ -29,7 +29,7 @@ class SearchFilter(CharFilter):
     """
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("lookup_expr", "icontains")
+        kwargs.setdefault("lookup_expr", "contains")
         self.search_fields = kwargs.pop("search_fields", None)
         super().__init__(*args, **kwargs)
 
