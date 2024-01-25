@@ -108,7 +108,7 @@ class DataPermissionFilter(BaseFilterBackend):
 
 
 class MultiSearchMixin:
-    lookup_expr = "icontains"
+    lookup_expr = "contains"
 
     def __init__(self, *args, search_fields, **kwargs):
         self.search_fields = search_fields
