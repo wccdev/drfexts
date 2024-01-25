@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models.constants import LOOKUP_SEP
 from django_filters.filters import (
     BooleanFilter,
     CharFilter,
@@ -12,7 +13,8 @@ from django_filters.filters import (
 from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.utils import get_model_field
 from rest_framework import serializers
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.filters import OrderingFilter
+from rest_framework.filters import SearchFilter as DefaultSearchFilter
 from rest_framework.utils.field_mapping import ClassLookupDict
 
 from ..serializers.fields import (
@@ -336,7 +338,17 @@ class OrderingFilterBackend(OrderingFilter):
         return fixed_fields
 
 
-class FullTextSearchFilter(SearchFilter):
+class SearchFilter(DefaultSearchFilter):
+    def construct_search(self, field_name):
+        lookup = self.lookup_prefixes.get(field_name[0])
+        if lookup:
+            field_name = field_name[1:]
+        else:
+            lookup = "contains"
+        return LOOKUP_SEP.join([field_name, lookup])
+
+
+class FullTextSearchFilter(DefaultSearchFilter):
     """
     Search filter that supports fulltext search
     """
