@@ -1,3 +1,9 @@
+## v3.2.7 (2024-01-26)
+
+### Fix
+
+- fix choices format in db comment
+
 ## v3.2.6 (2024-01-25)
 
 ### Fix
