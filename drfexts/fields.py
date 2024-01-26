@@ -20,7 +20,9 @@ class DefaultHelpTextMixin:
     def __init__(self, verbose_name, *args, **kwargs):
         kwargs.setdefault("help_text", verbose_name)
         if "choices" in kwargs:
-            kwargs.setdefault("db_comment", f"{verbose_name}: {kwargs['choices']}")
+            choices = getattr(kwargs["choices"], "choices", kwargs["choices"])
+            choice_comment = ", ".join([f"{k}: {v}" for k, v in choices])
+            kwargs.setdefault("db_comment", f"{verbose_name}: {choice_comment}")
         else:
             kwargs.setdefault("db_comment", verbose_name)
 
@@ -32,7 +34,9 @@ class NullHelpTextMixin:
         kwargs["null"] = False
         kwargs.setdefault("help_text", verbose_name)
         if "choices" in kwargs:
-            kwargs.setdefault("db_comment", f"{verbose_name}: {kwargs['choices']}")
+            choices = getattr(kwargs["choices"], "choices", kwargs["choices"])
+            choice_comment = ", ".join([f"{k}: {v}" for k, v in choices])
+            kwargs.setdefault("db_comment", f"{verbose_name}: {choice_comment}")
         else:
             kwargs.setdefault("db_comment", verbose_name)
 
@@ -157,7 +161,12 @@ class JSONField(DefaultHelpTextMixin, models.JSONField):
 class ArrayField(PGArrayField):
     def __init__(self, verbose_name, base_field, **kwargs):
         kwargs.setdefault("help_text", verbose_name)
-        kwargs.setdefault("db_comment", verbose_name)
+        if hasattr(base_field, "choices"):
+            choices = getattr(base_field.choices, "choices", base_field.choices)
+            choice_comment = ", ".join([f"{k}: {v}" for k, v in choices])
+            kwargs.setdefault("db_comment", f"{verbose_name}: {choice_comment}")
+        else:
+            kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("verbose_name", verbose_name)
         super().__init__(base_field, **kwargs)
 
