@@ -1,3 +1,9 @@
+## v1.1.7 (2024-01-26)
+
+### Fix
+
+- change default lookup to contains
+
 ## v1.1.6 (2024-01-26)
 
 ### Fix
