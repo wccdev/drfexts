@@ -29,7 +29,7 @@ class SearchFilter(CharFilter):
     """
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault("lookup_expr", "icontains")
+        kwargs.setdefault("lookup_expr", "contains")
         self.search_fields = kwargs.pop("search_fields", None)
         super().__init__(*args, **kwargs)
 
@@ -56,7 +56,8 @@ class SearchFilter(CharFilter):
 class MultipleValueFilter(Filter):
     """
     支持传入多个值查询一个字段
-    使用示例：stage_name = MultipleValueFilter(field_class=CharField, field_name="stage__name", lookup_expr="icontains")
+    使用示例：stage_name = MultipleValueFilter(
+        field_class=CharField, field_name="stage__name", lookup_expr="icontains")
     支持传参方式：
         1. ?stage_name[]=123&stage_name[]=124
         2. ?stage_name=123&stage_name=125
@@ -105,7 +106,7 @@ class DataPermissionFilter(BaseFilterBackend):
 
 
 class MultiSearchMixin:
-    lookup_expr = "icontains"
+    lookup_expr = "contains"
 
     def __init__(self, *args, search_fields, **kwargs):
         self.search_fields = search_fields
