@@ -205,17 +205,17 @@ class IsNotNullField(IsNullField):
 
 
 class ComplexPKRelatedField(PrimaryKeyRelatedField):
+    display_field_custom = "label_field"
+    display_field_default = "name"
+    display_field_name = "label"
+
     def __init__(
         self,
         pk_field_name="id",
-        display_field=None,
-        display_field_name="label",
         fields=(),
         **kwargs,
     ):
         self.pk_field_name = pk_field_name
-        self.display_field = display_field
-        self.display_field_name = display_field_name
         self.extra_fields = fields
         self.instance = None
         super().__init__(**kwargs)
@@ -261,25 +261,36 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         field_mapping = ClassLookupDict(
             serializers.ModelSerializer.serializer_field_mapping
         )
-        # add extra CharFilter for label
-        if self.display_field and self.display_field not in self.extra_fields:
-            fields[self.display_field_name] = serializers.CharField(
-                source=self.display_field, read_only=True
-            )
 
-        for field_name in self.extra_fields:
+        field_names = list(self.extra_fields).copy()
+        # add Filter for label
+        if self.display_field_name not in self.extra_fields:
+            field_names = [self.display_field_name] + field_names
+
+        for field_name in field_names:
             if field_name == self.pk_field_name:
                 continue
+
+            filter_filed = field_name
+            kwargs = {"read_only": True}
+
+            if field_name == self.display_field_name:
+                filter_filed = self.display_field_name
+                field_name = getattr(
+                    model, self.display_field_custom, self.display_field_default
+                )
+                if field_name != filter_filed:
+                    kwargs["source"] = field_name
 
             try:
                 model_field = model._meta.get_field(field_name)
             except FieldDoesNotExist:
                 continue
 
-            fields[field_name] = field_mapping[model_field](
-                read_only=True,
+            fields[filter_filed] = field_mapping[model_field](
                 label=model_field.verbose_name,
                 help_text=model_field.help_text,
+                **kwargs,
             )
 
         return fields
@@ -306,10 +317,12 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
 
         data = {self.pk_field_name: super().to_representation(value)}
         if self.display_field_name not in self.extra_fields:
-            if self.display_field:
-                data[self.display_field_name] = getattr(attr_obj, self.display_field)
-            else:
-                data[self.display_field_name] = str(attr_obj)
+            display_field = getattr(
+                attr_obj, self.display_field_custom, self.display_field_default
+            )
+            data[self.display_field_name] = getattr(
+                attr_obj, display_field, str(attr_obj)
+            )
 
         for field_name in self.extra_fields:
             data[field_name] = getattr(attr_obj, field_name)
