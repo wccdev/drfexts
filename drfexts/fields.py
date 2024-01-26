@@ -161,7 +161,7 @@ class JSONField(DefaultHelpTextMixin, models.JSONField):
 class ArrayField(PGArrayField):
     def __init__(self, verbose_name, base_field, **kwargs):
         kwargs.setdefault("help_text", verbose_name)
-        if hasattr(base_field, "choices"):
+        if getattr(base_field, "choices", None):
             choices = getattr(base_field.choices, "choices", base_field.choices)
             choice_comment = ", ".join([f"{k}: {v}" for k, v in choices])
             kwargs.setdefault("db_comment", f"{verbose_name}: {choice_comment}")
