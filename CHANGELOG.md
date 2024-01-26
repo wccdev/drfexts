@@ -1,3 +1,9 @@
+## v3.3.0 (2024-01-26)
+
+### Feat
+
+- support filtering by label
+
 ## v3.2.8 (2024-01-26)
 
 ### Fix
