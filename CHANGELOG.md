@@ -1,3 +1,9 @@
+## v3.3.4 (2024-01-29)
+
+### Fix
+
+- support ManyRelatedField querying
+
 ## v3.3.3 (2024-01-29)
 
 ### Fix
