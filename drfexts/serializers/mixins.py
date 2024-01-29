@@ -76,7 +76,7 @@ class ExportSerializerMixin:
         elif isinstance(getattr(field, "child_relation", None), ComplexPKRelatedField):
             value = "\n".join(x.get("label", "") for x in value)
         elif isinstance(field, ListField):
-            value = ",".join(self._trans_value(x, field.child) for x in value)
+            value = "\n".join(self._trans_value(x, field.child) for x in value)
         elif isinstance(field, ChoiceField):
             if isinstance(value, dict):
                 value = value.get("id")
