@@ -1,3 +1,9 @@
+## v3.3.1 (2024-01-29)
+
+### Fix
+
+- **export**: support choice object
+
 ## v3.3.0 (2024-01-26)
 
 ### Feat
