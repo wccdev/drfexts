@@ -1,3 +1,9 @@
+## v3.3.5 (2024-01-29)
+
+### Fix
+
+- SearchFilter support filtering choice fields
+
 ## v3.3.4 (2024-01-29)
 
 ### Fix
