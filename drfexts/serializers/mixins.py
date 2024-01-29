@@ -2,7 +2,7 @@ import json
 from collections import OrderedDict
 from functools import cached_property
 
-from rest_framework.fields import BooleanField, ChoiceField, SkipField
+from rest_framework.fields import BooleanField, ChoiceField, ListField, SkipField
 from rest_framework.relations import PKOnlyObject
 from rest_framework.serializers import BaseSerializer, ListSerializer, ModelSerializer
 
@@ -75,6 +75,8 @@ class ExportSerializerMixin:
             value = value.get("label")
         elif isinstance(getattr(field, "child_relation", None), ComplexPKRelatedField):
             value = "\n".join(x.get("label", "") for x in value)
+        elif isinstance(field, ListField):
+            value = ",".join(self._trans_value(x, field.child) for x in value)
         elif isinstance(field, ChoiceField):
             if isinstance(value, dict):
                 value = value.get("id")
