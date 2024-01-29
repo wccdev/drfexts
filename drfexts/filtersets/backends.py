@@ -1,7 +1,10 @@
 import logging
+import operator
+from functools import reduce
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Q
 from django.db.models.constants import LOOKUP_SEP
 from django_filters.filters import (
     BooleanFilter,
@@ -13,6 +16,7 @@ from django_filters.filters import (
 from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.utils import get_model_field
 from rest_framework import serializers
+from rest_framework.compat import distinct
 from rest_framework.filters import OrderingFilter
 from rest_framework.filters import SearchFilter as DefaultSearchFilter
 from rest_framework.utils.field_mapping import ClassLookupDict
@@ -358,6 +362,72 @@ class SearchFilter(DefaultSearchFilter):
         else:
             lookup = "contains"
         return LOOKUP_SEP.join([field_name, lookup])
+
+    def get_choice_fields_mapping(self, queryset, search_fields):
+        choice_fields_mapping = {}
+        for search_field in search_fields:
+            field = get_model_field(queryset.model, search_field)
+            lookup = "in"
+            if not field:
+                continue
+            if hasattr(field, "base_field"):
+                field = field.base_field
+                lookup = "overlap"
+
+            if choices := getattr(field, "choices", None):
+                if hasattr(choices, "choices"):
+                    choices = choices.choices
+                choice_fields_mapping[search_field] = (field.choices, lookup)
+        return choice_fields_mapping
+
+    def get_choice_seach_value(self, search_term, choices):
+        value = []
+        for v, label in choices:
+            if search_term in str(label):
+                value.append(v)
+        return value
+
+    def filter_queryset(self, request, queryset, view):
+        search_fields = self.get_search_fields(view, request)
+        search_terms = self.get_search_terms(request)
+
+        if not search_fields or not search_terms:
+            return queryset
+
+        choice_fields_mapping = self.get_choice_fields_mapping(queryset, search_fields)
+        orm_lookups = [
+            self.construct_search(str(search_field))
+            for search_field in search_fields
+            if search_field not in choice_fields_mapping
+        ]
+
+        base = queryset
+        conditions = []
+        for search_term in search_terms:
+            queries = [Q(**{orm_lookup: search_term}) for orm_lookup in orm_lookups]
+
+            queries.extend(
+                [
+                    Q(
+                        **{
+                            f"{field}__{lookup}": self.get_choice_seach_value(
+                                search_term, choices
+                            )
+                        }
+                    )
+                    for field, (choices, lookup) in choice_fields_mapping.items()
+                ]
+            )
+            conditions.append(reduce(operator.or_, queries))
+        queryset = queryset.filter(reduce(operator.and_, conditions))
+
+        if self.must_call_distinct(queryset, search_fields):
+            # Filtering against a many-to-many field requires us to
+            # call queryset.distinct() in order to avoid duplicate items
+            # in the resulting queryset.
+            # We try to avoid this if possible, for performance reasons.
+            queryset = distinct(queryset, base)
+        return queryset
 
 
 class FullTextSearchFilter(DefaultSearchFilter):
