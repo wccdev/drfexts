@@ -355,6 +355,18 @@ class OrderingFilterBackend(OrderingFilter):
 
 
 class SearchFilter(DefaultSearchFilter):
+    def get_search_terms(self, request):
+        """
+        Search terms are set by a ?search=... query parameter,
+        and may be comma and/or whitespace delimited.
+        """
+        params = request.query_params.get(self.search_param, "")
+        params = params.strip()
+        params = params.replace("\x00", "")  # strip null characters
+        params = params.replace(",", " ")
+        params = params.replace("，", " ")
+        return params.split()
+
     def construct_search(self, field_name):
         lookup = self.lookup_prefixes.get(field_name[0])
         if lookup:
