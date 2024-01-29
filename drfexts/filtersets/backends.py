@@ -194,10 +194,19 @@ class AutoFilterBackend(DjangoFilterBackend):
                     continue
 
                 if isinstance(
-                    field, (serializers.BaseSerializer, ComplexPKRelatedField)
+                    field,
+                    (
+                        serializers.BaseSerializer,
+                        serializers.ManyRelatedField,
+                        ComplexPKRelatedField,
+                    ),
                 ):
+                    child_field = field
+                    if isinstance(field, serializers.ManyRelatedField):
+                        child_field = field.child_relation
+
                     filters_from_serializer(
-                        field,
+                        child_field,
                         field_name_prefix=field_name,
                         filter_name_prefix=filter_name,
                     )
@@ -230,12 +239,15 @@ class AutoFilterBackend(DjangoFilterBackend):
 
                 # Fix when set custom through model for `MantToManyField`
                 if (
-                    isinstance(field, serializers.ManyRelatedField)
-                    and kwargs.get("queryset") is None
-                ):
-                    kwargs["queryset"] = getattr(
-                        field.root.Meta.model, field.source
-                    ).rel.model._default_manager.all()
+                    isinstance(field, serializers.PrimaryKeyRelatedField)
+                    or isinstance(field, serializers.ManyRelatedField)
+                ) and kwargs.get("queryset") is None:
+                    related_model_field = field.root.Meta.model._meta.get_field(
+                        field.source
+                    )
+                    kwargs[
+                        "queryset"
+                    ] = related_model_field.related_model._default_manager
 
                 if "queryset" in kwargs and kwargs["queryset"] is None:
                     logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
