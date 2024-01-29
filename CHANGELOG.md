@@ -1,3 +1,9 @@
+## v3.3.2 (2024-01-29)
+
+### Fix
+
+- **export**: support exporting ArrayChoiceField
+
 ## v3.3.1 (2024-01-29)
 
 ### Fix
