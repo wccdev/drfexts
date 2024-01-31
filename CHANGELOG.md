@@ -1,3 +1,9 @@
+## v3.3.7 (2024-01-31)
+
+### Fix
+
+- get remote model from parent
+
 ## v3.3.6 (2024-01-29)
 
 ### Fix
