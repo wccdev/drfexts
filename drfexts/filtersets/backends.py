@@ -75,7 +75,7 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         },
         serializers.ManyRelatedField: {
             "filter_class": ExtendedModelMultipleChoiceFilter,
-            "extra": lambda f: {"queryset": f.child_relation.queryset},
+            "extra": lambda f: {"queryset": f.child_relation.queryset, "distinct": True},
         },
         serializers.RelatedField: {"filter_class": MultipleSelectFilter},
         serializers.JSONField: {
