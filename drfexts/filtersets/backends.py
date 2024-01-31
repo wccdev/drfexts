@@ -246,7 +246,7 @@ class AutoFilterBackend(DjangoFilterBackend):
                     isinstance(field, serializers.PrimaryKeyRelatedField)
                     or isinstance(field, serializers.ManyRelatedField)
                 ) and kwargs.get("queryset") is None:
-                    related_model_field = field.root.Meta.model._meta.get_field(
+                    related_model_field = field.parent.Meta.model._meta.get_field(
                         field.source
                     )
                     kwargs[
