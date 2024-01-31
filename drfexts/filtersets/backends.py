@@ -172,7 +172,7 @@ class AutoFilterBackend(DjangoFilterBackend):
         }
 
         def filters_from_serializer(
-            _serializer, field_name_prefix="", filter_name_prefix=""
+            _serializer, field_name_prefix="", filter_name_prefix="", filter_kwargs={}
         ):
             if isinstance(_serializer, serializers.ListSerializer):
                 _serializer = _serializer.child
@@ -208,11 +208,13 @@ class AutoFilterBackend(DjangoFilterBackend):
                     child_field = field
                     if isinstance(field, serializers.ManyRelatedField):
                         child_field = field.child_relation
+                        filter_kwargs = {"distinct": True}
 
                     filters_from_serializer(
                         child_field,
                         field_name_prefix=field_name,
                         filter_name_prefix=filter_name,
+                        filter_kwargs=filter_kwargs,
                     )
 
                 try:
@@ -241,6 +243,7 @@ class AutoFilterBackend(DjangoFilterBackend):
                 if callable(extra):
                     kwargs.update(extra(field))
 
+                kwargs.update(filter_kwargs)
                 # Fix when set custom through model for `MantToManyField`
                 if (
                     isinstance(field, serializers.PrimaryKeyRelatedField)
