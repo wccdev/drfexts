@@ -1,3 +1,9 @@
+## v3.3.9 (2024-01-31)
+
+### Fix
+
+- add distinct to ManyRelatedField
+
 ## v3.3.8 (2024-01-31)
 
 ### Fix
