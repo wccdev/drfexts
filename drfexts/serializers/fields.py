@@ -331,7 +331,9 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
 
 
 class NullToEmptyCharField(serializers.CharField):
-    def to_internal_value(self, data):
-        if data is None and not self.allow_null:
-            data = ""
-        return super().to_internal_value(data)
+    def get_value(self, dictionary):
+        value = super().get_value(dictionary)
+        if not self.allow_null and value is None:
+            value = ""
+
+        return value
