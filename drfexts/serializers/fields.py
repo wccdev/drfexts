@@ -328,3 +328,10 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
             data[field_name] = getattr(attr_obj, field_name)
 
         return data
+
+
+class NullToEmptyCharField(serializers.CharField):
+    def to_internal_value(self, data):
+        if data is None and not self.allow_null:
+            data = ""
+        return super().to_internal_value(data)
