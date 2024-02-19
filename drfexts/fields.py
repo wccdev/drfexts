@@ -31,7 +31,7 @@ class DefaultHelpTextMixin:
 
 class NullHelpTextMixin:
     def __init__(self, verbose_name, *args, **kwargs):
-        kwargs["null"] = False
+        kwargs.setdefault("null", False)
         kwargs.setdefault("help_text", verbose_name)
         if "choices" in kwargs:
             choices = getattr(kwargs["choices"], "choices", kwargs["choices"])
