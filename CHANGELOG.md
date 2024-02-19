@@ -1,3 +1,9 @@
+## v3.4.0 (2024-02-19)
+
+### Feat
+
+- make NullToEmptyCharField as default CharField
+
 ## v3.3.10 (2024-02-19)
 
 ### Fix
