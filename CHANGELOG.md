@@ -1,3 +1,9 @@
+## v3.3.10 (2024-02-19)
+
+### Fix
+
+- make CharField nullable
+
 ## v3.3.9 (2024-01-31)
 
 ### Fix
