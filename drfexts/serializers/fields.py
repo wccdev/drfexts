@@ -299,6 +299,26 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         self.instance = instance  # cache instance for `to_representation`
         return super().get_attribute(instance)
 
+    def get_choices(self, cutoff=None):
+        queryset = self.get_queryset()
+        if queryset is None:
+            # Ensure that field.choices returns something sensible
+            # even when accessed with a read-only field.
+            return {}
+
+        if cutoff is not None:
+            queryset = queryset[:cutoff]
+
+        return OrderedDict(
+            [
+                (
+                    self.to_representation(item)[self.pk_field_name],
+                    self.display_value(item),
+                )
+                for item in queryset
+            ]
+        )
+
     def to_internal_value(self, data):
         try:
             data = data[self.pk_field_name]
