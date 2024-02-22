@@ -316,7 +316,7 @@ class OrderingFilterBackend(OrderingFilter):
         """
         params = request.query_params.get(self.ordering_param)
         if params:
-            fields = [param.strip() for param in params.split(",")]
+            fields = [param.strip().split(".")[0] for param in params.split(",")]
             fields = self.get_fixed_fields(fields, view, request)
             ordering = self.remove_invalid_fields(queryset, fields, view, request)
             if ordering:
