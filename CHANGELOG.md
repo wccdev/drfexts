@@ -1,3 +1,9 @@
+## v3.4.2 (2024-02-22)
+
+### Fix
+
+- **ordering**: remove extra field
+
 ## v3.4.1 (2024-02-19)
 
 ### Fix
