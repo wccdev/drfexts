@@ -1,3 +1,9 @@
+## v3.5.0 (2024-03-05)
+
+### Feat
+
+- add RequestTimeMiddleware
+
 ## v3.4.3 (2024-02-22)
 
 ### Fix
