@@ -345,7 +345,7 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
             )
 
         for field_name in self.extra_fields:
-            data[field_name] = getattr(attr_obj, field_name)
+            data[field_name] = getattr(attr_obj, field_name, None)
 
         return data
 
