@@ -1,3 +1,9 @@
+## v3.5.1 (2024-03-20)
+
+### Fix
+
+- set default to None when failing to get attributes
+
 ## v3.5.0 (2024-03-05)
 
 ### Feat
