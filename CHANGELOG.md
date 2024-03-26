@@ -1,3 +1,9 @@
+## v3.7.0 (2024-03-26)
+
+### Feat
+
+- add annotate fields dynamicly
+
 ## v3.6.0 (2024-03-26)
 
 ### Feat
