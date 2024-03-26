@@ -1,3 +1,9 @@
+## v3.6.0 (2024-03-26)
+
+### Feat
+
+- support djangorestframework 3.15
+
 ## v3.5.1 (2024-03-20)
 
 ### Fix

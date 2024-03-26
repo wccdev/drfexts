@@ -1,11 +1,12 @@
 [tool.commitizen]
-version = "3.5.1"
+version = "3.6.0"
 tag_format = "v$major.$minor.$patch$prerelease"
 version_files = ["pyproject.toml:version", "drfexts/__init__.py"]
 
 [tool.poetry]
 name = "drfexts"
-version = "3.5.1"
+version = "3.6.0"
+package-mode = true
 readme = "README.md"
 description = "Django Restframework Utils"
 authors = ["aiden <allaher@icloud.com>"]
