@@ -4,7 +4,7 @@ from functools import reduce
 
 from django.contrib.postgres.search import SearchQuery, SearchVector
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.db.models.constants import LOOKUP_SEP
 from django_filters.filters import (
     BooleanFilter,
@@ -16,7 +16,6 @@ from django_filters.filters import (
 from django_filters.rest_framework import DjangoFilterBackend, filterset
 from django_filters.utils import get_model_field
 from rest_framework import serializers
-from rest_framework.compat import distinct
 from rest_framework.filters import OrderingFilter
 from rest_framework.filters import SearchFilter as DefaultSearchFilter
 from rest_framework.utils.field_mapping import ClassLookupDict
@@ -437,11 +436,11 @@ class SearchFilter(DefaultSearchFilter):
         queryset = queryset.filter(reduce(operator.and_, conditions))
 
         if self.must_call_distinct(queryset, search_fields):
-            # Filtering against a many-to-many field requires us to
-            # call queryset.distinct() in order to avoid duplicate items
-            # in the resulting queryset.
-            # We try to avoid this if possible, for performance reasons.
-            queryset = distinct(queryset, base)
+            # inspired by django.contrib.admin
+            # this is more accurate than .distinct form M2M relationship
+            # also is cross-database
+            queryset = queryset.filter(pk=OuterRef("pk"))
+            queryset = base.filter(Exists(queryset))
         return queryset
 
 
