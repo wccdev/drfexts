@@ -1,3 +1,9 @@
+## v3.7.1 (2024-04-01)
+
+### Fix
+
+- **export**: fix file extensions
+
 ## v3.7.0 (2024-03-26)
 
 ### Feat
