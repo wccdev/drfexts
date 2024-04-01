@@ -1,5 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import QuerySet
+from django.utils import timezone
 from rest_framework.fields import ReadOnlyField
 from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.viewsets import GenericViewSet
@@ -254,7 +255,13 @@ class ExportMixin:
         Return the filename of the export file.
         :return:
         """
+        filext = ""
         if "filename" in self.request.query_params:  # noqa
             return self.request.query_params["filename"]  # noqa
 
-        return f"{self.default_base_filename}.csv"
+        if self.request.accepted_media_type.startswith("text/csv"):
+            filext = "csv"
+        elif self.request.accepted_media_type.startswith("application/xlsx"):
+            filext = "xlsx"
+
+        return f"{self.default_base_filename}({timezone.now().date()}).{filext}"
