@@ -262,17 +262,14 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
             serializers.ModelSerializer.serializer_field_mapping
         )
 
-        field_names = list(self.extra_fields).copy()
-        # add Filter for label
-        if self.display_field_name not in self.extra_fields:
-            field_names = [self.display_field_name] + field_names
-
+        field_names = {self.pk_field_name, self.display_field_name} | set(
+            self.extra_fields
+        )
         for field_name in field_names:
-            if field_name == self.pk_field_name:
-                continue
-
             filter_filed = field_name
-            kwargs = {"read_only": True}
+            kwargs = {}
+            if field_name != self.pk_field_name:
+                kwargs["read_only"] = True
 
             if field_name == self.display_field_name:
                 filter_filed = self.display_field_name
