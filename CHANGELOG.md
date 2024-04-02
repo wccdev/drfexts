@@ -1,3 +1,9 @@
+## v3.7.2 (2024-04-02)
+
+### Fix
+
+- **docs**: fix openapi schemas for ComplexPKRelatedField
+
 ## v3.7.1 (2024-04-01)
 
 ### Fix
