@@ -1,3 +1,9 @@
+## v3.8.0 (2024-04-09)
+
+### Feat
+
+- add ImportSerializerMixin
+
 ## v3.7.2 (2024-04-02)
 
 ### Fix
