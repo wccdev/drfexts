@@ -122,3 +122,21 @@ class ExportSerializerMixin:
                 ret[field.label] = self._trans_value(value, field)
 
         return ret
+
+
+class ImportSerializerMixin:
+    """
+    A ModelSerializer that process import data.
+    """
+
+    def to_internal_value(self, data):
+        """
+        Dict of native values <- Dict of primitive datatypes.
+        """
+        if not isinstance(data, dict):
+            self.fail("invalid")
+
+        fields = self._writable_fields
+        fields_mapping = {field.label: field.field_name for field in fields}
+        data = {fields_mapping[k]: v for k, v in data.items() if k in fields_mapping}
+        return super().to_internal_value(data)

@@ -20,4 +20,4 @@ class RequestTimeMiddleware:
 
 
 def get_request_time():
-    return getattr(_thread_locals, "request_time", None)
+    return getattr(_thread_locals, "request_time", timezone.now())
