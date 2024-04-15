@@ -1,3 +1,9 @@
+## v3.8.1 (2024-04-15)
+
+### Fix
+
+- **exception**: optimize error messages
+
 ## v3.8.0 (2024-04-09)
 
 ### Feat
