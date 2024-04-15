@@ -15,7 +15,11 @@ from rest_framework.fields import (
     get_attribute,
     to_choices_dict,
 )
-from rest_framework.relations import PrimaryKeyRelatedField, RelatedField
+from rest_framework.relations import (
+    ManyRelatedField,
+    PrimaryKeyRelatedField,
+    RelatedField,
+)
 from rest_framework.serializers import Serializer
 from rest_framework.utils import html
 from rest_framework.utils.field_mapping import ClassLookupDict
@@ -242,19 +246,27 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         if self.queryset is not None:
             model = self.queryset.model
         else:
+            if isinstance(self.parent, ManyRelatedField):
+                parent = self.parent.parent
+                source = self.parent.source
+            else:
+                parent = self.parent
+                source = self.source
+
             assert hasattr(
-                self.parent, "Meta"
+                parent, "Meta"
             ), 'Class {serializer_class} missing "Meta" attribute'.format(
                 serializer_class=self.__class__.__name__
             )
+
             assert hasattr(
-                self.parent.Meta, "model"
+                parent.Meta, "model"
             ), 'Class {serializer_class} missing "Meta.model" attribute'.format(
                 serializer_class=self.__class__.__name__
             )
 
-            parent_model = getattr(self.parent.Meta, "model")
-            model = parent_model._meta.get_field(self.source).related_model
+            parent_model = getattr(parent.Meta, "model")
+            model = parent_model._meta.get_field(source).related_model
 
         # Determine the fields that should be included on the serializer.
         fields = OrderedDict()
