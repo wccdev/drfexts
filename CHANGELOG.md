@@ -1,3 +1,9 @@
+## v3.8.2 (2024-04-15)
+
+### Fix
+
+- **serializers**: fix errors raised when generating many-to-many fields
+
 ## v3.8.1 (2024-04-15)
 
 ### Fix
