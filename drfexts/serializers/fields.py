@@ -296,11 +296,14 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
             except FieldDoesNotExist:
                 continue
 
-            fields[filter_filed] = field_mapping[model_field](
-                label=model_field.verbose_name,
-                help_text=model_field.help_text,
-                **kwargs,
-            )
+            try:
+                fields[filter_filed] = field_mapping[model_field](
+                    label=model_field.verbose_name,
+                    help_text=model_field.help_text,
+                    **kwargs,
+                )
+            except TypeError:
+                continue
 
         return fields
 
