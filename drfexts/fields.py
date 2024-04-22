@@ -1,6 +1,7 @@
 import uuid
 from functools import partial
 
+import django
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes import fields as ct_fields
@@ -240,7 +241,8 @@ class UpdatedAtField(models.DateTimeField):
     def __init__(self, verbose_name="修改时间", **kwargs):
         kwargs["editable"] = False
         kwargs["auto_now"] = True
-        kwargs["db_default"] = Now()
+        if django.VERSION > (5, 0):
+            kwargs["db_default"] = Now()
         kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", "该记录的最后修改时间")
         kwargs.setdefault("blank", True)
@@ -255,7 +257,8 @@ class CreatedAtField(models.DateTimeField):
     def __init__(self, verbose_name="创建时间", **kwargs):
         kwargs["editable"] = False
         kwargs["auto_now_add"] = True
-        kwargs["db_default"] = Now()
+        if django.VERSION > (5, 0):
+            kwargs["db_default"] = Now()
         kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", "该记录的创建时间")
         kwargs.setdefault("blank", True)
