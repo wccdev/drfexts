@@ -88,8 +88,8 @@ class DisplayChoiceField(ChoiceField):
 
 class ChoiceSerializer(Serializer):
     id = CharField(label="值")
-    label = CharField(required=False, label="键")
-    color = CharField(required=False, label="颜色", allow_null=True)
+    label = CharField(required=False, read_only=True, label="键")
+    color = CharField(required=False, read_only=True, label="颜色", allow_null=True)
 
 
 @extend_schema_field(ChoiceSerializer())
