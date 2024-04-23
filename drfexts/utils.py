@@ -107,13 +107,17 @@ def get_error_msg(data: dict | list, default_field_key):
         if "detail" in data:
             return str(data["detail"])
         elif default_field_key in data:
-            return "/n".join(str(s) for s in data[default_field_key])
+            return "\n".join(str(s) for s in data[default_field_key])
 
         errors = []
         for k, v in data.items():
-            errors.append(f"{k}: {'/n'.join(str(s) for s in v)}")
+            if isinstance(v, dict):
+                errors.append(get_error_msg(v, default_field_key))
+                # errors.append(f"{k}: {'\n'.join(str(s) for s in v.values())}")
+            else:
+                errors.append(f"{k}: " + "\n".join(str(s) for s in v))
 
-        return "/n".join(errors)
+        return "\n".join(errors)
     elif isinstance(data, exceptions.ErrorDetail):
         return str(data)
     elif isinstance(data, list):
