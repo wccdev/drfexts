@@ -1,3 +1,9 @@
+## v3.9.0 (2024-04-29)
+
+### Feat
+
+- **export**: support exporting list data by pk
+
 ## v3.8.4 (2024-04-22)
 
 ### Fix
