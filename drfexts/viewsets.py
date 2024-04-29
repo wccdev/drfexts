@@ -7,6 +7,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from drfexts.renderers import CustomCSVRenderer, CustomXLSXRenderer
 
+from .filtersets.filters import MultipleSelectFilter
 from .serializers.mixins import ExportSerializerMixin
 
 
@@ -197,6 +198,7 @@ class ExportMixin:
 
     export_actions = ["list"]
     default_base_filename = "export"
+    filterset_fields_overwrite = {"ids": MultipleSelectFilter(field_name="pk")}
 
     def is_export_action(self) -> bool:
         """
