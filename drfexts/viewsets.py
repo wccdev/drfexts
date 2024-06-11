@@ -2,10 +2,12 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import QuerySet
 from django.utils import timezone
 from rest_framework.fields import ReadOnlyField
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
 
-from drfexts.renderers import CustomCSVRenderer, CustomXLSXRenderer
+from drfexts.renderers import CustomCSVRenderer
+from drfexts.renderers import CustomXLSXRenderer
 
 from .filtersets.filters import MultipleSelectFilter
 from .serializers.mixins import ExportSerializerMixin
@@ -113,8 +115,8 @@ class ExtGenericViewSet(GenericViewSet):
         支持针对不同action指定不同的序列化器
         """
         assert self.serializer_class is not None, (
-            "'%s' should either include a `serializer_class` attribute, "
-            "or override the `get_serializer_class()` method." % self.__class__.__name__
+            f"'{self.__class__.__name__}' should either include a `serializer_class` attribute, "  # noqa
+            "or override the `get_serializer_class()` method."
         )
         if isinstance(self.serializer_class, dict):  # 多个serializer_class
             assert (
@@ -173,8 +175,8 @@ class ExtGenericViewSet(GenericViewSet):
         (Eg. return a list of items that is specific to the user)
         """
         assert self.queryset is not None, (
-            "'%s' should either include a `queryset` attribute, "
-            "or override the `get_queryset()` method." % self.__class__.__name__
+            "'{self.__class__.__name__}' should either include a `queryset` attribute, "
+            "or override the `get_queryset()` method."
         )
 
         queryset = self.queryset
@@ -190,6 +192,12 @@ class ExtGenericViewSet(GenericViewSet):
 
         return queryset
 
+    def get_filterset_fields_overwrite(self):
+        """
+        Return the filterset fields overwrite.
+        """
+        return getattr(self, "filterset_fields_overwrite", {})
+
 
 class ExportMixin:
     """
@@ -198,7 +206,13 @@ class ExportMixin:
 
     export_actions = ["list"]
     default_base_filename = "export"
-    filterset_fields_overwrite = {"ids": MultipleSelectFilter(field_name="pk")}
+
+    def get_filterset_fields_overwrite(self):
+        filterset_fields_overwrite = super().get_filterset_fields_overwrite()  # noqa
+        return {
+            "ids": MultipleSelectFilter(field_name="pk"),
+            **filterset_fields_overwrite,
+        }
 
     def is_export_action(self) -> bool:
         """
@@ -233,8 +247,7 @@ class ExportMixin:
         serializer_class = super().get_serializer_class()  # noqa
         if self.is_export_action():
 
-            class ExportSerializer(ExportSerializerMixin, serializer_class):
-                ...
+            class ExportSerializer(ExportSerializerMixin, serializer_class): ...
 
             return ExportSerializer
 

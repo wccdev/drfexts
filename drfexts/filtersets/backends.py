@@ -2,42 +2,40 @@ import logging
 import operator
 from functools import reduce
 
-from django.contrib.postgres.search import SearchQuery, SearchVector
+from django.contrib.postgres.search import SearchQuery
+from django.contrib.postgres.search import SearchVector
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists
+from django.db.models import OuterRef
+from django.db.models import Q
 from django.db.models.constants import LOOKUP_SEP
-from django_filters.filters import (
-    BooleanFilter,
-    CharFilter,
-    Filter,
-    TimeFilter,
-    UUIDFilter,
-)
-from django_filters.rest_framework import DjangoFilterBackend, filterset
+from django_filters.filters import BooleanFilter
+from django_filters.filters import CharFilter
+from django_filters.filters import Filter
+from django_filters.filters import TimeFilter
+from django_filters.filters import UUIDFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from django_filters.rest_framework import filterset
 from django_filters.utils import get_model_field
 from rest_framework import serializers
 from rest_framework.filters import OrderingFilter
 from rest_framework.filters import SearchFilter as DefaultSearchFilter
 from rest_framework.utils.field_mapping import ClassLookupDict
 
-from ..serializers.fields import (
-    ComplexPKRelatedField,
-    DisplayChoiceField,
-    IsNotNullField,
-    IsNullField,
-)
-from .filters import (
-    ArrayMultipleChoiceFilter,
-    ExtendedCharFilter,
-    ExtendedDateFromToRangeFilter,
-    ExtendedDisplayMultipleChoiceFilter,
-    ExtendedModelMultipleChoiceFilter,
-    ExtendedMultipleChoiceFilter,
-    ExtendedNumberFilter,
-    IsNotNullFilter,
-    IsNullFilter,
-    MultipleSelectFilter,
-)
+from ..serializers.fields import ComplexPKRelatedField
+from ..serializers.fields import DisplayChoiceField
+from ..serializers.fields import IsNotNullField
+from ..serializers.fields import IsNullField
+from .filters import ArrayMultipleChoiceFilter
+from .filters import ExtendedCharFilter
+from .filters import ExtendedDateFromToRangeFilter
+from .filters import ExtendedDisplayMultipleChoiceFilter
+from .filters import ExtendedModelMultipleChoiceFilter
+from .filters import ExtendedMultipleChoiceFilter
+from .filters import ExtendedNumberFilter
+from .filters import IsNotNullFilter
+from .filters import IsNullFilter
+from .filters import MultipleSelectFilter
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +72,10 @@ FILTER_FOR_SERIALIZER_FIELD_DEFAULTS = ClassLookupDict(
         },
         serializers.ManyRelatedField: {
             "filter_class": ExtendedModelMultipleChoiceFilter,
-            "extra": lambda f: {"queryset": f.child_relation.queryset, "distinct": True},
+            "extra": lambda f: {
+                "queryset": f.child_relation.queryset,
+                "distinct": True,
+            },
         },
         serializers.RelatedField: {"filter_class": MultipleSelectFilter},
         serializers.JSONField: {
@@ -139,18 +140,17 @@ class AutoFilterBackend(DjangoFilterBackend):
         Return the `FilterSet` class used to filter the queryset.
         """
         filterset_class = getattr(view, "filterset_class", None)
-        filterset_fields_overwrite = getattr(view, "filterset_fields_overwrite", {})
+        filterset_fields_overwrite = {}
+        if hasattr(view, "get_filterset_fields_overwrite"):
+            filterset_fields_overwrite = view.get_filterset_fields_overwrite()
 
         if filterset_class:
             filterset_model = filterset_class._meta.model  # noqa
 
             # FilterSets do not need to specify a Meta class
             if filterset_model and queryset is not None:
-                assert issubclass(
-                    queryset.model, filterset_model
-                ), "FilterSet model %s does not match queryset model %s" % (
-                    filterset_model,
-                    queryset.model,
+                assert issubclass(queryset.model, filterset_model), (
+                    f"FilterSet model {filterset_model} does not match queryset model {queryset.model}"  # noqa
                 )
 
             return filterset_class
@@ -171,8 +171,9 @@ class AutoFilterBackend(DjangoFilterBackend):
         }
 
         def filters_from_serializer(
-            _serializer, field_name_prefix="", filter_name_prefix="", filter_kwargs={}
+            _serializer, field_name_prefix="", filter_name_prefix="", filter_kwargs=None
         ):
+            filter_kwargs = filter_kwargs or {}
             if isinstance(_serializer, serializers.ListSerializer):
                 _serializer = _serializer.child
 
@@ -251,9 +252,9 @@ class AutoFilterBackend(DjangoFilterBackend):
                     related_model_field = field.parent.Meta.model._meta.get_field(
                         field.source
                     )
-                    kwargs[
-                        "queryset"
-                    ] = related_model_field.related_model._default_manager
+                    kwargs["queryset"] = (
+                        related_model_field.related_model._default_manager
+                    )
 
                 if "queryset" in kwargs and kwargs["queryset"] is None:
                     logger.debug(f"{filter_name} 字段未提供queryset, 跳过自动成filter!")
@@ -324,11 +325,13 @@ class OrderingFilterBackend(OrderingFilter):
         # No ordering was included, or all the ordering fields were invalid
         return self.get_default_ordering(view)
 
-    def get_default_valid_fields(self, queryset, view, context={}):
+    def get_default_valid_fields(self, queryset, view, context=None):
         serializer_class = self.get_serializer_class(view)
         return [
             (field.source.replace(".", "__") or field_name, field.label)
-            for field_name, field in serializer_class(context=context).fields.items()
+            for field_name, field in serializer_class(
+                context=context or {}
+            ).fields.items()
             if not getattr(field, "write_only", False) and not field.source == "*"
         ]
 
