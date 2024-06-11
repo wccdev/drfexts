@@ -1,3 +1,9 @@
+## v3.9.2 (2024-06-11)
+
+### Refactor
+
+- **serializer**: optimize
+
 ## v3.9.1 (2024-06-11)
 
 ### Fix
