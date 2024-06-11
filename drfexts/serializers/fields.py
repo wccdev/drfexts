@@ -1,29 +1,25 @@
 import collections
-from collections import OrderedDict
 from functools import cached_property
 
-from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from rest_framework.fields import (
-    CharField,
-    ChoiceField,
-    Field,
-    empty,
-    flatten_choices_dict,
-    get_attribute,
-    to_choices_dict,
-)
-from rest_framework.relations import (
-    ManyRelatedField,
-    PrimaryKeyRelatedField,
-    RelatedField,
-)
+from rest_framework.fields import CharField
+from rest_framework.fields import ChoiceField
+from rest_framework.fields import empty
+from rest_framework.fields import Field
+from rest_framework.fields import flatten_choices_dict
+from rest_framework.fields import get_attribute
+from rest_framework.fields import SkipField
+from rest_framework.fields import to_choices_dict
+from rest_framework.relations import ManyRelatedField
+from rest_framework.relations import PKOnlyObject
+from rest_framework.relations import PrimaryKeyRelatedField
+from rest_framework.relations import RelatedField
+from rest_framework.serializers import ModelSerializer
 from rest_framework.serializers import Serializer
 from rest_framework.utils import html
-from rest_framework.utils.field_mapping import ClassLookupDict
-from rest_framework.utils.serializer_helpers import BindingDict
 
 __all__ = (
     "SequenceField",
@@ -232,17 +228,13 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         # `fields` is evaluated lazily. We do this to ensure that we don't
         # have issues importing modules that use ModelSerializers as fields,
         # even if Django's app-loading stage has not yet run.
-        fields = BindingDict(self)
-        for key, value in self.get_fields().items():
-            fields[key] = value
-        return fields
+        serializer = self.get_serializer()
+        return serializer.fields
 
-    def get_fields(self):
+    def get_model(self):
         """
-        Return the dict of field names -> field instances that should be
-        used for `self.fields` when instantiating the serializer.
+        Return the model instance that should be used for the field.
         """
-
         if self.queryset is not None:
             model = self.queryset.model
         else:
@@ -255,57 +247,50 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
 
             assert hasattr(
                 parent, "Meta"
-            ), 'Class {serializer_class} missing "Meta" attribute'.format(
-                serializer_class=self.__class__.__name__
-            )
+            ), f'Class {self.__class__.__name__} missing "Meta" attribute'
 
             assert hasattr(
                 parent.Meta, "model"
-            ), 'Class {serializer_class} missing "Meta.model" attribute'.format(
-                serializer_class=self.__class__.__name__
-            )
+            ), f'Class {self.__class__.__name__} missing "Meta.model" attribute'
 
-            parent_model = getattr(parent.Meta, "model")
+            parent_model = parent.Meta.model
             model = parent_model._meta.get_field(source).related_model
 
-        # Determine the fields that should be included on the serializer.
-        fields = OrderedDict()
-        field_mapping = ClassLookupDict(
-            serializers.ModelSerializer.serializer_field_mapping
+        return model
+
+    def get_serializer(self, *args, **kwargs):
+        """
+        Override `get_serializer` to pass the `fields
+        """
+        _model = self.get_model()
+        display_field_name = getattr(
+            _model, self.display_field_custom, self.display_field_default
         )
+        if not hasattr(_model, display_field_name):
+            display_field_name = "__str__"
 
-        field_names = {self.pk_field_name, self.display_field_name} | set(
-            self.extra_fields
-        )
-        for field_name in field_names:
-            filter_filed = field_name
-            kwargs = {}
-            if field_name != self.pk_field_name:
-                kwargs["read_only"] = True
+        read_only_fields_nopk = list(set(self.extra_fields) - {self.pk_field_name})
 
-            if field_name == self.display_field_name:
-                filter_filed = self.display_field_name
-                field_name = getattr(
-                    model, self.display_field_custom, self.display_field_default
-                )
-                if field_name != filter_filed:
-                    kwargs["source"] = field_name
+        class NestedSerializer(ModelSerializer):
+            label = serializers.CharField(source=display_field_name, read_only=True)
 
-            try:
-                model_field = model._meta.get_field(field_name)
-            except FieldDoesNotExist:
-                continue
+            class Meta:
+                model = _model
+                fields = [self.pk_field_name, "label", *self.extra_fields]
+                read_only_fields = read_only_fields_nopk
+                extra_kwargs = {
+                    self.pk_field_name: {"read_only": False, "default": None},
+                }
 
-            try:
-                fields[filter_filed] = field_mapping[model_field](
-                    label=model_field.verbose_name,
-                    help_text=model_field.help_text,
-                    **kwargs,
-                )
-            except TypeError:
-                continue
+        return NestedSerializer(*args, **kwargs)
 
-        return fields
+    def get_fields(self):
+        """
+        Return the dict of field names -> field instances that should be
+        used for `self.fields` when instantiating the serializer.
+        """
+        serializer = self.get_serializer()
+        return serializer.fields
 
     def get_attribute(self, instance):
         self.instance = instance  # cache instance for `to_representation`
@@ -321,15 +306,13 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         if cutoff is not None:
             queryset = queryset[:cutoff]
 
-        return OrderedDict(
-            [
-                (
-                    self.to_representation(item)[self.pk_field_name],
-                    self.display_value(item),
-                )
-                for item in queryset
-            ]
-        )
+        return [
+            (
+                self.to_representation(item)[self.pk_field_name],
+                self.display_value(item),
+            )
+            for item in queryset
+        ]
 
     def to_internal_value(self, data):
         try:
@@ -347,17 +330,28 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         except AttributeError:
             attr_obj = value  # attr_obj is a model instance
 
-        data = {self.pk_field_name: super().to_representation(value)}
-        if self.display_field_name not in self.extra_fields:
-            display_field = getattr(
-                attr_obj, self.display_field_custom, self.display_field_default
-            )
-            data[self.display_field_name] = getattr(
-                attr_obj, display_field, str(attr_obj)
-            )
+        if attr_obj is None:
+            return {self.pk_field_name: value.pk, "label": ""}
 
-        for field_name in self.extra_fields:
-            data[field_name] = getattr(attr_obj, field_name, None)
+        data = {self.pk_field_name: None, "label": ""}
+        for field in self.fields.values():
+            try:
+                attribute = field.get_attribute(attr_obj)
+            except SkipField:
+                continue
+
+            # We skip `to_representation` for `None` values so that fields do
+            # not have to explicitly deal with that case.
+            #
+            # For related fields with `use_pk_only_optimization` we need to
+            # resolve the pk value.
+            check_for_none = (
+                attribute.pk if isinstance(attribute, PKOnlyObject) else attribute
+            )
+            if check_for_none is None:
+                data[field.field_name] = None
+            else:
+                data[field.field_name] = field.to_representation(attribute)
 
         return data
 
