@@ -1,3 +1,9 @@
+## v3.9.1 (2024-06-11)
+
+### Fix
+
+- **filters**: use function  to get overwrite fields
+
 ## v3.9.0 (2024-04-29)
 
 ### Feat
