@@ -1,3 +1,10 @@
+## v3.9.3 (2024-06-26)
+
+### Fix
+
+- **export**: fix that some fields may be escaped when exporting abnormal attributes
+- **export**: fix that some fields may be escaped when exporting abnormal attributes
+
 ## v3.9.2 (2024-06-11)
 
 ### Refactor
