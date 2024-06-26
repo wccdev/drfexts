@@ -1,5 +1,4 @@
 import json
-from collections import OrderedDict
 from functools import cached_property
 
 from rest_framework.fields import BooleanField
@@ -101,7 +100,7 @@ class ExportSerializerMixin:
         """
         Object instance -> Dict of primitive datatypes.
         """
-        ret = OrderedDict()
+        ret = {}
         fields = self.export_fields
 
         for field in fields:
