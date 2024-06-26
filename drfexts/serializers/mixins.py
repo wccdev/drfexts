@@ -2,9 +2,14 @@ import json
 from collections import OrderedDict
 from functools import cached_property
 
-from rest_framework.fields import BooleanField, ChoiceField, ListField, SkipField
+from rest_framework.fields import BooleanField
+from rest_framework.fields import ChoiceField
+from rest_framework.fields import ListField
+from rest_framework.fields import SkipField
 from rest_framework.relations import PKOnlyObject
-from rest_framework.serializers import BaseSerializer, ListSerializer, ModelSerializer
+from rest_framework.serializers import BaseSerializer
+from rest_framework.serializers import ListSerializer
+from rest_framework.serializers import ModelSerializer
 
 from ..utils import get_serializer_field
 from .fields import ComplexPKRelatedField
@@ -21,7 +26,7 @@ class DynamicFieldsSerializer(ModelSerializer):
         fields = kwargs.pop("fields", None)
 
         # Instantiate the superclass normally
-        super(DynamicFieldsSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if fields is not None:
             # Drop any fields that are not specified in the `fields` argument.
@@ -60,6 +65,8 @@ class ExportSerializerMixin:
             if is_skipped:
                 continue
 
+            field.default = ""
+            field.source = ".".join(source_attrs)
             field.label = fields_map.get(field_name, field.label)
             field.source_attrs = source_attrs
             yield field
