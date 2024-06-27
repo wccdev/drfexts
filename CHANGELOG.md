@@ -1,3 +1,9 @@
+## v3.9.6 (2024-06-27)
+
+### Refactor
+
+- **export**: automaticly adjust column width
+
 ## v3.9.5 (2024-06-27)
 
 ### Refactor
