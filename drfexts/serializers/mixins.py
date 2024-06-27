@@ -65,7 +65,6 @@ class ExportSerializerMixin:
                 continue
 
             field.default = ""
-            field.source = ".".join(source_attrs)
             field.label = fields_map.get(field_name, field.label)
             field.source_attrs = source_attrs
             yield field
