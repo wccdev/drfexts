@@ -1,10 +1,12 @@
 import datetime
 import functools
 import operator
+import re
 from decimal import Decimal
 from io import BytesIO
 from itertools import chain
-from typing import Any, Optional
+from typing import Any
+from typing import Optional
 from urllib.parse import quote
 
 import orjson
@@ -13,7 +15,10 @@ from django.db.models.query import QuerySet
 from django.utils.encoding import force_str
 from django.utils.functional import Promise
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment
+from openpyxl.styles import Font
+from openpyxl.styles import PatternFill
+from openpyxl.utils import get_column_letter
 from rest_framework import status
 from rest_framework.renderers import BaseRenderer
 from rest_framework.settings import api_settings
@@ -136,7 +141,7 @@ class BaseExportRenderer(BaseRenderer):
         response = renderer_context.get("response")
 
         if data is None:
-            return bytes()
+            return b""
 
         if isinstance(data, dict):
             try:
@@ -161,9 +166,9 @@ class BaseExportRenderer(BaseRenderer):
 
         # 解决下载中文文件名乱码问题, 详情见: RFC 5987: https://www.rfc-editor.org/rfc/rfc5987.txt
         if response:
-            response[
-                "content-disposition"
-            ] = f"attachment; filename*=UTF-8''{encoded_filename}"
+            response["content-disposition"] = (
+                f"attachment; filename*=UTF-8''{encoded_filename}"
+            )
         return file_content
 
     def get_file_content(self, table, charset=None, writer_opts=None) -> bytes:
@@ -198,7 +203,7 @@ class BaseExportRenderer(BaseRenderer):
             # each item designates the name of the column that the item will
             # fall into.
             data = self.flatten_data(data)
-            # Get the set of all unique headers, and sort them (unless already provided).
+            # Get the set of all unique headers, and sort them (unless already provided).  # noqa: E501
             if not header:
                 # We don't have to materialize the data generator unless we
                 # have to build a header.
@@ -269,10 +274,38 @@ class CustomXLSXRenderer(BaseExportRenderer):
         "header_font": Font(b=True),
         "header_fill": PatternFill("solid", start_color="87CEFA"),
         "header_alignment": Alignment(vertical="center"),
-        "header_height": 20,
+        "header_height": 23,
+        "height": 18,
         "freeze_header": True,
         "freeze_panes": "A2",
     }
+    chinese_char_pattern = re.compile(r"[\u4e00-\u9fff]+")
+
+    def adjust_column_widths(self, ws, max_rows=30):
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column  # 获取列号
+            for cell in col[:max_rows]:  # 仅检查前 max_rows 行
+                try:
+                    if cell.value:
+                        value = str(cell.value)
+                        # 找出所有中文字符
+                        chinese_chars = self.chinese_char_pattern.findall(value)
+                        # 计算中文字符的总长度
+                        chinese_length = (
+                            sum(len(chars) for chars in chinese_chars) * 2.1
+                        )
+                        # 计算非中文字符的总长度
+                        non_chinese_length = len(value) - sum(
+                            len(chars) for chars in chinese_chars
+                        )
+                        # 总长度
+                        total_length = chinese_length + non_chinese_length
+                        max_length = max(max_length, total_length)
+                except:  # noqa: E722
+                    pass
+            adjusted_width = max_length + 2  # 加上适当的缓冲
+            ws.column_dimensions[get_column_letter(column)].width = adjusted_width
 
     def get_file_content(self, table, charset=None, writer_opts=None):
         writer_opts = writer_opts or {}
@@ -280,20 +313,25 @@ class CustomXLSXRenderer(BaseExportRenderer):
 
         output = BytesIO()
         workbook = Workbook()
-        sheet = workbook.active
+        worksheet = workbook.active
 
-        for row in table:
-            sheet.append(row)
+        for row_number, row in enumerate(table, start=1):
+            worksheet.append(row)
+            # set column height
+            if row_number == 1:
+                height = export_style["header_height"]
+            else:
+                height = export_style["height"]
+            worksheet.row_dimensions[row_number].height = height
 
-        for cell in sheet["1:1"]:
+        self.adjust_column_widths(worksheet)
+        for cell in worksheet["1:1"]:
             cell.font = export_style["header_font"]
             cell.fill = export_style["header_fill"]
             cell.alignment = export_style["header_alignment"]
 
-        sheet.row_dimensions[1].height = export_style["header_height"]
-        sheet.freeze_panes = export_style.get("freeze_panes", True)
-
-        sheet.print_title_rows = "1:1"
+        worksheet.freeze_panes = export_style.get("freeze_panes", True)
+        worksheet.print_title_rows = "1:1"
         workbook.save(output)
 
         return output.getvalue()
