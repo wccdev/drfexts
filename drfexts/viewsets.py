@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -10,7 +13,7 @@ from drfexts.renderers import CustomCSVRenderer
 from drfexts.renderers import CustomXLSXRenderer
 
 from .filtersets.filters import MultipleSelectFilter
-from .serializers.mixins import ExportSerializerMixin
+from .utils.utils import get_nested_value
 
 
 class EagerLoadingMixin:
@@ -245,13 +248,38 @@ class ExportMixin:
         :return:
         """
         serializer_class = super().get_serializer_class()  # noqa
-        if self.is_export_action():
+        if not self.is_export_action():
+            return serializer_class
 
-            class ExportSerializer(ExportSerializerMixin, serializer_class): ...
+        fields_map = json.loads(self.request.query_params.get("fields_map", "{}"))
 
-            return ExportSerializer
+        def trans_val(value):
+            if isinstance(value, list):
+                value = ",".join(
+                    v["label"] if isinstance(v, dict) and "label" in v else str(v)
+                    for v in value
+                )
+            elif isinstance(value, dict) and "label" in value:
+                value = value["label"]
+            elif isinstance(value, bool):
+                value = "是" if value else "否"
+            return value
 
-        return serializer_class
+        class ExportSerializer(serializer_class):
+            def to_representation(self, instance):
+                """
+                Serialize objects -> primitive datatypes.
+                """
+                data = super().to_representation(instance)
+                ret = {}
+
+                for field_name, label in fields_map.items():
+                    val = get_nested_value(data, field_name, default="")
+                    ret[label] = trans_val(val)
+
+                return ret
+
+        return ExportSerializer
 
     def get_renderer_context(self):
         """
@@ -271,12 +299,14 @@ class ExportMixin:
         :return:
         """
         filext = ""
-        if "filename" in self.request.query_params:  # noqa
-            return self.request.query_params["filename"]  # noqa
-
         if self.request.accepted_media_type.startswith("text/csv"):
-            filext = "csv"
+            filext = ".csv"
         elif self.request.accepted_media_type.startswith("application/xlsx"):
-            filext = "xlsx"
+            filext = ".xlsx"
 
-        return f"{self.default_base_filename}({timezone.now().date()}).{filext}"
+        if "filename" in self.request.query_params:  # noqa
+            fullname = Path(self.request.query_params["filename"]).stem + filext
+        else:
+            fullname = f"{self.default_base_filename}({timezone.now().date()}){filext}"
+
+        return fullname

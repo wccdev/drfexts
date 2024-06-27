@@ -8,7 +8,8 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.transaction import atomic
 from django.http import QueryDict
 from django.utils import timezone
-from rest_framework import exceptions, serializers
+from rest_framework import exceptions
+from rest_framework import serializers
 
 
 class CustomEncoder(DjangoJSONEncoder):
@@ -50,7 +51,7 @@ def strtobool(val):
     elif val in ("n", "no", "f", "false", "off", "0"):
         return False
     else:
-        raise ValueError("invalid truth value %r" % (val,))
+        raise ValueError(f"invalid truth value {val}")
 
 
 def get_serial_code(prefix=""):
@@ -143,3 +144,18 @@ def get_split_query_params(query_params: QueryDict, field_name: str) -> list[str
         return value[0].split(",")
 
     return []
+
+
+def get_nested_value(d, key, default=None):
+    """
+    函数通过将键字符串拆分成键列表，然后逐层获取嵌套字典中的值。
+    如果在任何层次上键不存在，函数将返回 default
+    """
+    keys = key.split(".")
+    value = d
+    for k in keys:
+        if isinstance(value, dict):
+            value = value.get(k, default)
+        else:
+            return default
+    return value
