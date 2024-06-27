@@ -1,3 +1,9 @@
+## v3.9.7 (2024-06-27)
+
+### Refactor
+
+- **export**: refactor export serializer class
+
 ## v3.9.6 (2024-06-27)
 
 ### Refactor
