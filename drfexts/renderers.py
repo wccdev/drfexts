@@ -276,6 +276,7 @@ class CustomXLSXRenderer(BaseExportRenderer):
         "header_alignment": Alignment(vertical="center"),
         "header_height": 23,
         "height": 18,
+        "limit_width": 50,
         "freeze_header": True,
         "freeze_panes": "A2",
     }
@@ -302,6 +303,9 @@ class CustomXLSXRenderer(BaseExportRenderer):
                         # 总长度
                         total_length = chinese_length + non_chinese_length
                         max_length = max(max_length, total_length)
+                        if max_length > self.default_export_style["limit_width"]:
+                            max_length = self.default_export_style["limit_width"]
+                            break
                 except:  # noqa: E722
                     pass
             adjusted_width = max_length + 2  # 加上适当的缓冲
