@@ -251,6 +251,8 @@ class ExportMixin:
         if not self.is_export_action():
             return serializer_class
 
+        fields = self.request.query_params.get("fields", "")
+        field_names = fields.split(",") if fields else []
         fields_map = json.loads(self.request.query_params.get("fields_map", "{}"))
 
         def trans_val(value):
@@ -273,9 +275,9 @@ class ExportMixin:
                 data = super().to_representation(instance)
                 ret = {}
 
-                for field_name, label in fields_map.items():
+                for field_name in field_names:
                     val = get_nested_value(data, field_name, default="")
-                    ret[label] = trans_val(val)
+                    ret[fields_map[field_name]] = trans_val(val)
 
                 return ret
 
