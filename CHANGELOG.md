@@ -1,3 +1,9 @@
+## v3.9.8 (2024-06-28)
+
+### Fix
+
+- **export**: limit max column width
+
 ## v3.9.7 (2024-06-27)
 
 ### Refactor
