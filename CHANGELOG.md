@@ -1,3 +1,9 @@
+## v3.9.9 (2024-06-28)
+
+### Fix
+
+- **export**: fix the export order of columns
+
 ## v3.9.8 (2024-06-28)
 
 ### Fix
