@@ -1,3 +1,9 @@
+## v3.9.10 (2024-07-01)
+
+### Refactor
+
+- **renderers**: refactor excel renderers
+
 ## v3.9.9 (2024-06-28)
 
 ### Fix
