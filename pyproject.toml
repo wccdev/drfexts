@@ -28,6 +28,7 @@ openpyxl = ">=3.0.9"
 orjson = "^3.9.15"
 django-currentuser = ">=0.5.3"
 drf-flex-fields = ">=0.9.8"
+xlsxwriter = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^4.0.1"
