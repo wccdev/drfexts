@@ -1,3 +1,9 @@
+## v3.9.11 (2024-07-01)
+
+### Fix
+
+- **renderers**: fix missing packages
+
 ## v3.9.10 (2024-07-01)
 
 ### Refactor
