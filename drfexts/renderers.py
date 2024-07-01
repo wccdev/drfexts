@@ -11,14 +11,10 @@ from urllib.parse import quote
 
 import orjson
 import unicodecsv as csv
+import xlsxwriter
 from django.db.models.query import QuerySet
 from django.utils.encoding import force_str
 from django.utils.functional import Promise
-from openpyxl import Workbook
-from openpyxl.styles import Alignment
-from openpyxl.styles import Font
-from openpyxl.styles import PatternFill
-from openpyxl.utils import get_column_letter
 from rest_framework import status
 from rest_framework.renderers import BaseRenderer
 from rest_framework.settings import api_settings
@@ -271,71 +267,72 @@ class CustomXLSXRenderer(BaseExportRenderer):
     writer_opts = None
     data_key = "results"
     default_export_style = {
-        "header_font": Font(b=True),
-        "header_fill": PatternFill("solid", start_color="87CEFA"),
-        "header_alignment": Alignment(vertical="center"),
+        "header_font": {"bold": True},
+        "header_fill": "#87CEFA",
+        "header_alignment": {"valign": "vcenter"},
         "header_height": 23,
         "height": 18,
         "limit_width": 50,
         "freeze_header": True,
-        "freeze_panes": "A2",
+        "freeze_panes": (1, 0),  # 1st row
     }
     chinese_char_pattern = re.compile(r"[\u4e00-\u9fff]+")
 
-    def adjust_column_widths(self, ws, max_rows=30):
-        for col in ws.columns:
-            max_length = 0
-            column = col[0].column  # 获取列号
-            for cell in col[:max_rows]:  # 仅检查前 max_rows 行
-                try:
-                    if cell.value:
-                        value = str(cell.value)
-                        # 找出所有中文字符
-                        chinese_chars = self.chinese_char_pattern.findall(value)
-                        # 计算中文字符的总长度
-                        chinese_length = (
-                            sum(len(chars) for chars in chinese_chars) * 2.1
-                        )
-                        # 计算非中文字符的总长度
-                        non_chinese_length = len(value) - sum(
-                            len(chars) for chars in chinese_chars
-                        )
-                        # 总长度
-                        total_length = chinese_length + non_chinese_length
-                        max_length = max(max_length, total_length)
-                        if max_length > self.default_export_style["limit_width"]:
-                            max_length = self.default_export_style["limit_width"]
-                            break
-                except:  # noqa: E722
-                    pass
-            adjusted_width = max_length + 2  # 加上适当的缓冲
-            ws.column_dimensions[get_column_letter(column)].width = adjusted_width
+    def get_column_width(self, cell_value):
+        value = str(cell_value)
+        chinese_chars = self.chinese_char_pattern.findall(value)
+        chinese_length = sum(len(chars) for chars in chinese_chars) * 2.1
+        non_chinese_length = len(value) - sum(len(chars) for chars in chinese_chars)
+        total_length = chinese_length + non_chinese_length
+        adjusted_width = total_length + 1
+        return adjusted_width
 
     def get_file_content(self, table, charset=None, writer_opts=None):
         writer_opts = writer_opts or {}
         export_style = writer_opts.get("export_style", self.default_export_style)
 
         output = BytesIO()
-        workbook = Workbook()
-        worksheet = workbook.active
+        workbook = xlsxwriter.Workbook(output, {"in_memory": True})
+        worksheet = workbook.add_worksheet()
 
-        for row_number, row in enumerate(table, start=1):
-            worksheet.append(row)
-            # set column height
-            if row_number == 1:
+        header_format = workbook.add_format(
+            {
+                "bold": export_style["header_font"].get("bold", False),
+                "bg_color": export_style["header_fill"],
+                "valign": export_style["header_alignment"].get("valign", "vcenter"),
+            }
+        )
+        column_width_map = {}
+        max_detected_rows = 30
+
+        for row_number, row in enumerate(table):
+            row = list(row)
+            worksheet.write_row(row_number, 0, row)
+            if row_number == 0:
                 height = export_style["header_height"]
+                for col_num in range(len(row)):
+                    worksheet.write(row_number, col_num, row[col_num], header_format)
             else:
                 height = export_style["height"]
-            worksheet.row_dimensions[row_number].height = height
 
-        self.adjust_column_widths(worksheet)
-        for cell in worksheet["1:1"]:
-            cell.font = export_style["header_font"]
-            cell.fill = export_style["header_fill"]
-            cell.alignment = export_style["header_alignment"]
+            if row_number <= max_detected_rows:
+                for col_num, value in enumerate(row):
+                    column_width = self.get_column_width(value)
+                    column_width_map[col_num] = max(
+                        column_width_map.get(col_num, 0), column_width
+                    )
 
-        worksheet.freeze_panes = export_style.get("freeze_panes", True)
-        worksheet.print_title_rows = "1:1"
-        workbook.save(output)
+            worksheet.set_row(row_number, height)
 
+        # 调整列宽
+        for col_num in range(worksheet.dim_colmax + 1):
+            adjusted_width = column_width_map[col_num]
+            worksheet.set_column(col_num, col_num, adjusted_width)
+
+        # 冻结表头
+        if export_style.get("freeze_header", False):
+            worksheet.freeze_panes(*export_style["freeze_panes"])
+
+        # worksheet.autofit()  # This is not working as expected
+        workbook.close()
         return output.getvalue()
