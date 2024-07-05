@@ -290,7 +290,6 @@ class CustomXLSXRenderer(BaseExportRenderer):
     def get_file_content(self, table, charset=None, writer_opts=None):
         writer_opts = writer_opts or {}
         export_style = writer_opts.get("export_style", self.default_export_style)
-
         output = BytesIO()
         workbook = xlsxwriter.Workbook(output, {"in_memory": True})
         worksheet = workbook.add_worksheet()
@@ -325,9 +324,10 @@ class CustomXLSXRenderer(BaseExportRenderer):
             worksheet.set_row(row_number, height)
 
         # 调整列宽
-        for col_num in range(worksheet.dim_colmax + 1):
-            adjusted_width = column_width_map[col_num]
-            worksheet.set_column(col_num, col_num, adjusted_width)
+        if column_width_map:
+            for col_num in range(worksheet.dim_colmax + 1):
+                adjusted_width = column_width_map[col_num]
+                worksheet.set_column(col_num, col_num, adjusted_width)
 
         # 冻结表头
         if export_style.get("freeze_header", False):
