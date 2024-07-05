@@ -1,3 +1,9 @@
+## v3.9.13 (2024-07-05)
+
+### Fix
+
+- **renderer**: support exporting blank file
+
 ## v3.9.12 (2024-07-03)
 
 ### Fix
