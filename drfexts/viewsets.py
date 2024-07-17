@@ -252,8 +252,13 @@ class ExportMixin:
             return serializer_class
 
         fields = self.request.query_params.get("fields", "")
+        column_names = self.request.query_params.get("field_names", "")
         field_names = fields.split(",") if fields else []
-        fields_map = json.loads(self.request.query_params.get("fields_map", "{}"))
+        field_column_names = column_names.split(",") if column_names else []
+        if field_column_names:
+            fields_map = dict(zip(field_names, field_column_names))
+        else:
+            fields_map = json.loads(self.request.query_params.get("fields_map", "{}"))
 
         def trans_val(value):
             if isinstance(value, list):
