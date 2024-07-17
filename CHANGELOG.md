@@ -1,3 +1,9 @@
+## v3.10.0 (2024-07-17)
+
+### Feat
+
+- **renderer**: support field_names on exporting url params
+
 ## v3.9.13 (2024-07-05)
 
 ### Fix
