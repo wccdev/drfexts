@@ -1,3 +1,9 @@
+## v3.10.1 (2024-07-19)
+
+### Fix
+
+- **serializers**: compatible with display_field field
+
 ## v3.10.0 (2024-07-17)
 
 ### Feat
