@@ -213,6 +213,7 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         self,
         pk_field_name="id",
         fields=(),
+        display_field=None,
         **kwargs,
     ):
         self.pk_field_name = pk_field_name
