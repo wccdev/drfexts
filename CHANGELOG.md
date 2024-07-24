@@ -1,3 +1,9 @@
+## v3.10.2 (2024-07-24)
+
+### Fix
+
+- **serializers**: respect display_field in ComplexPKRelatedField
+
 ## v3.10.1 (2024-07-19)
 
 ### Fix
