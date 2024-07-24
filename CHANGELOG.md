@@ -1,3 +1,9 @@
+## v3.10.3 (2024-07-24)
+
+### Fix
+
+- **serializers**: use display_field_default instead of display_field_custom
+
 ## v3.10.2 (2024-07-24)
 
 ### Fix
