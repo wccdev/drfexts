@@ -1,3 +1,9 @@
+## v3.10.4 (2024-07-24)
+
+### Fix
+
+- **serializers**: skip setting source to field_name
+
 ## v3.10.3 (2024-07-24)
 
 ### Fix
