@@ -276,7 +276,10 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         read_only_fields_nopk = list(set(self.extra_fields) - {self.pk_field_name})
 
         class NestedSerializer(ModelSerializer):
-            label = serializers.CharField(source=display_field_name, read_only=True)
+            if display_field_name == "label":
+                label = serializers.CharField(read_only=True)
+            else:
+                label = serializers.CharField(source=display_field_name, read_only=True)
 
             class Meta:
                 model = _model
