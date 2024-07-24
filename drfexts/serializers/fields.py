@@ -216,6 +216,9 @@ class ComplexPKRelatedField(PrimaryKeyRelatedField):
         display_field=None,
         **kwargs,
     ):
+        if display_field:
+            self.display_field_custom = display_field
+
         self.pk_field_name = pk_field_name
         self.extra_fields = fields
         self.instance = None
