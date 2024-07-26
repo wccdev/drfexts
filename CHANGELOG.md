@@ -1,3 +1,9 @@
+## v3.11.0 (2024-07-26)
+
+### Feat
+
+- **serializers**: support extracting params from PriceField
+
 ## v3.10.4 (2024-07-24)
 
 ### Fix
