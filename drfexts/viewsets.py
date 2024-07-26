@@ -1,4 +1,5 @@
 import json
+from itertools import zip_longest
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -253,12 +254,11 @@ class ExportMixin:
 
         fields = self.request.query_params.get("fields", "")
         column_names = self.request.query_params.get("field_names", "")
+        fields_map = json.loads(self.request.query_params.get("fields_map", "{}"))
         field_names = fields.split(",") if fields else []
         field_column_names = column_names.split(",") if column_names else []
-        if field_column_names:
-            fields_map = dict(zip(field_names, field_column_names))
-        else:
-            fields_map = json.loads(self.request.query_params.get("fields_map", "{}"))
+        if not fields_map:
+            fields_map = dict(zip_longest(field_names, field_column_names))
 
         def trans_val(value):
             if isinstance(value, list):
@@ -282,7 +282,8 @@ class ExportMixin:
 
                 for field_name in field_names:
                     val = get_nested_value(data, field_name, default="")
-                    ret[fields_map[field_name]] = trans_val(val)
+                    col_name = fields_map[field_name] or field_name
+                    ret[col_name] = trans_val(val)
 
                 return ret
 
