@@ -13,7 +13,8 @@ from django.db.models.functions import Now
 from django_currentuser.db.models import CurrentUserField
 
 from .choices import SimpleStatus
-from .constants import AuditStatus, CommonStatus
+from .constants import AuditStatus
+from .constants import CommonStatus
 from .utils import get_serial_code
 
 
@@ -230,7 +231,9 @@ class UserForeignKeyField(models.ForeignKey):
         kwargs.setdefault("db_constraint", False)
         kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("help_text", verbose_name)
-        super().__init__(to=to, verbose_name=verbose_name, on_delete=on_delete, **kwargs)
+        super().__init__(
+            to=to, verbose_name=verbose_name, on_delete=on_delete, **kwargs
+        )
 
 
 class UpdatedAtField(models.DateTimeField):
@@ -342,7 +345,10 @@ class StatusField(models.PositiveSmallIntegerField):
         kwargs.setdefault("db_comment", verbose_name)
         kwargs.setdefault("choices", CommonStatus.choices)
         kwargs.setdefault("default", CommonStatus.VALID)
-        kwargs.setdefault("help_text", "100：已失效，75：待失效，50：有效，25：暂停中，10：待生效，5：待提交，0：删除")
+        kwargs.setdefault(
+            "help_text",
+            "100：已失效，75：待失效，50：有效，25：暂停中，10：待生效，5：待提交，0：删除",
+        )
         super().__init__(verbose_name, **kwargs)
 
 
@@ -475,3 +481,41 @@ class ChoiceArrayField(ArrayField):
         # Skip our parent's formfield implementation completely as we don't care for it.
         # pylint:disable=bad-super-call
         return super().formfield(**defaults)
+
+
+class PriceField(models.DecimalField):
+    """
+    价格字段:
+    max_digits: 默认19
+    decimal_places: 默认4位
+    display_decimal_places: 序列化器展示位数, 默认4
+
+    price = PriceField()
+    """
+
+    def __init__(
+        self,
+        verbose_name,
+        max_digits=19,
+        decimal_places=4,
+        display_decimal_places=None,
+        normalize_output=False,
+        **kwargs,
+    ):
+        self.display_decimal_places = display_decimal_places or decimal_places
+        self.normalize_output = normalize_output
+        kwargs.setdefault("max_digits", max_digits)
+        kwargs.setdefault("decimal_places", decimal_places)
+        if not kwargs.get("null", False):
+            kwargs.setdefault("default", 0)
+
+        super().__init__(verbose_name=verbose_name, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        # Only include kwarg if it's not the default
+        if self.display_decimal_places is not None:
+            kwargs["display_decimal_places"] = self.display_decimal_places
+        if self.normalize_output:
+            kwargs["normalize_output"] = self.normalize_output
+        return name, path, args, kwargs

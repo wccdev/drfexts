@@ -1,9 +1,11 @@
 from django.conf import settings
-from django.db.models import CharField
+from django.db import models
 from django.utils.module_loading import import_string
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
+from rest_framework.serializers import DecimalField
 from rest_framework.serializers import ModelSerializer
 
+from drfexts.fields import PriceField
 from drfexts.serializers.fields import NullToEmptyCharField
 
 from ..utils import get_split_query_params
@@ -38,7 +40,8 @@ class WCCModelSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     serializer_related_to_field = SERIALIZER_RELATED_TO_FIELD
 
     serializer_field_mapping = ModelSerializer.serializer_field_mapping.copy()
-    serializer_field_mapping[CharField] = NullToEmptyCharField
+    serializer_field_mapping[models.CharField] = NullToEmptyCharField
+    serializer_field_mapping[PriceField] = DecimalField
 
     # _SELECT_RELATED_FIELDS = []
     # _PREFETCH_RELATED_FIELDS = []
@@ -49,6 +52,19 @@ class WCCModelSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
         # Instantiate the superclass normally
         super().__init__(*args, **kwargs)
+
+    def build_standard_field(self, field_name, model_field):
+        field_class, field_kwargs = super().build_standard_field(
+            field_name, model_field
+        )
+        if "decimal_places" in field_kwargs and getattr(
+            model_field, "display_decimal_places", None
+        ):
+            field_kwargs["decimal_places"] = model_field.display_decimal_places
+            if getattr(model_field, "normalize_output", False):
+                field_kwargs["normalize_output"] = True
+
+        return field_class, field_kwargs
 
     @classmethod
     def process_queryset(cls, request, queryset):
