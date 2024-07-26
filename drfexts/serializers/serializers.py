@@ -2,10 +2,8 @@ from django.conf import settings
 from django.db import models
 from django.utils.module_loading import import_string
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework.serializers import DecimalField
 from rest_framework.serializers import ModelSerializer
 
-from drfexts.fields import PriceField
 from drfexts.serializers.fields import NullToEmptyCharField
 
 from ..utils import get_split_query_params
@@ -41,7 +39,6 @@ class WCCModelSerializer(FlexFieldsSerializerMixin, ModelSerializer):
 
     serializer_field_mapping = ModelSerializer.serializer_field_mapping.copy()
     serializer_field_mapping[models.CharField] = NullToEmptyCharField
-    serializer_field_mapping[PriceField] = DecimalField
 
     # _SELECT_RELATED_FIELDS = []
     # _PREFETCH_RELATED_FIELDS = []
