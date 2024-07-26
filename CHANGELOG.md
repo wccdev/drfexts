@@ -1,3 +1,9 @@
+## v3.11.1 (2024-07-26)
+
+### Fix
+
+- **serializers**: remove useless field mapping
+
 ## v3.11.0 (2024-07-26)
 
 ### Feat
