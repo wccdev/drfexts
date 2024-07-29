@@ -1,3 +1,13 @@
+## v3.11.2 (2024-07-29)
+
+### Fix
+
+- **renderer**: make field_names is optional
+
+### Refactor
+
+- **renderers**: optimize excel styles
+
 ## v3.11.1 (2024-07-26)
 
 ### Fix
