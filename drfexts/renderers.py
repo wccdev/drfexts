@@ -268,13 +268,16 @@ class CustomXLSXRenderer(BaseExportRenderer):
     data_key = "results"
     default_export_style = {
         "header_font": {"bold": True},
-        "header_fill": "#87CEFA",
+        "header_fill": "#418AD6",
+        "header_font_color": "#FFFFFF",
         "header_alignment": {"valign": "vcenter"},
         "header_height": 23,
+        "align": "center",
         "height": 18,
         "limit_width": 50,
         "freeze_header": True,
         "freeze_panes": (1, 0),  # 1st row
+        "include_sequence_column": True,
     }
     chinese_char_pattern = re.compile(r"[\u4e00-\u9fff]+")
 
@@ -289,33 +292,42 @@ class CustomXLSXRenderer(BaseExportRenderer):
 
     def get_file_content(self, table, charset=None, writer_opts=None):
         writer_opts = writer_opts or {}
-        export_style = writer_opts.get("export_style", self.default_export_style)
+        custom_export_style = writer_opts.get("export_style", {})
+        export_style = self.default_export_style | custom_export_style
         output = BytesIO()
         workbook = xlsxwriter.Workbook(output, {"in_memory": True})
         worksheet = workbook.add_worksheet()
-
         header_format = workbook.add_format(
             {
                 "bold": export_style["header_font"].get("bold", False),
                 "bg_color": export_style["header_fill"],
                 "valign": export_style["header_alignment"].get("valign", "vcenter"),
+                "align": export_style["align"],
+                "font_color": export_style["header_font_color"],
+            }
+        )
+        cell_format = workbook.add_format(
+            {
+                "valign": export_style["header_alignment"].get("valign", "vcenter"),
+                "align": export_style["align"],
             }
         )
         column_width_map = {}
         max_detected_rows = 30
 
         for row_number, row in enumerate(table):
-            row = list(row)
-            worksheet.write_row(row_number, 0, row)
             if row_number == 0:
                 height = export_style["header_height"]
-                for col_num in range(len(row)):
-                    worksheet.write(row_number, col_num, row[col_num], header_format)
+                w_row = ["序号", *row]
+                for col_num in range(len(w_row)):
+                    worksheet.write(row_number, col_num, w_row[col_num], header_format)
             else:
                 height = export_style["height"]
+                w_row = [row_number, *row]
+                worksheet.write_row(row_number, 0, w_row, cell_format)
 
             if row_number <= max_detected_rows:
-                for col_num, value in enumerate(row):
+                for col_num, value in enumerate(w_row):
                     column_width = self.get_column_width(value)
                     column_width_map[col_num] = max(
                         column_width_map.get(col_num, 0), column_width
