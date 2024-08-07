@@ -132,6 +132,7 @@ def get_error_msg(data: dict | list, default_field_key):
 def get_split_query_params(query_params: QueryDict, field_name: str) -> list[str]:
     """
     获取分割后的查询参数
+    注意：变量"a.b.c"只取"a"
     :param query_params:
     :param field_name:
     :return:
@@ -141,7 +142,7 @@ def get_split_query_params(query_params: QueryDict, field_name: str) -> list[str
         value = query_params.get(field_name + "[]")
 
     if value and len(value) == 1:
-        return value[0].split(",")
+        return [val.split(".", 1)[0] for val in value[0].split(",")]
 
     return []
 

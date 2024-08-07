@@ -274,7 +274,7 @@ class CustomXLSXRenderer(BaseExportRenderer):
         "header_height": 23,
         "align": "center",
         "height": 18,
-        "limit_width": 50,
+        "limit_width": 45,
         "freeze_header": True,
         "freeze_panes": (1, 0),  # 1st row
         "include_sequence_column": True,
@@ -339,6 +339,9 @@ class CustomXLSXRenderer(BaseExportRenderer):
         if column_width_map:
             for col_num in range(worksheet.dim_colmax + 1):
                 adjusted_width = column_width_map[col_num]
+                if adjusted_width > export_style["limit_width"]:
+                    adjusted_width = export_style["limit_width"]
+
                 worksheet.set_column(col_num, col_num, adjusted_width)
 
         # 冻结表头
