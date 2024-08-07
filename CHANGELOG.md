@@ -1,3 +1,9 @@
+## v3.12.0 (2024-08-07)
+
+### Feat
+
+- **serializer**: fix that function 'process_queryset' may not work
+
 ## v3.11.2 (2024-07-29)
 
 ### Fix
