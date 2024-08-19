@@ -14,6 +14,10 @@ class CustomPagination(pagination.PageNumberPagination):
     max_page_size = 100000
 
     def paginate_queryset(self, queryset, request, view=None):
+        """
+        Paginate a queryset if required, either returning a
+        page object, or `None` if pagination is not configured for this view.
+        """
         page_num = request.query_params.get(self.page_query_param)
         # 判断，如果 page 为all 则取消分页返回所有
         if page_num == "all":
@@ -22,7 +26,19 @@ class CustomPagination(pagination.PageNumberPagination):
             request.query_params[self.page_size_query_param] = self.max_page_size
             request.query_params._mutable = False
 
-        return super().paginate_queryset(queryset, request, view)
+        self.request = request
+        page_size = self.get_page_size(request)
+        if not page_size:
+            return None
+
+        paginator = self.django_paginator_class(queryset, page_size)
+        page_number = self.get_page_number(request, paginator)
+        self.page = paginator.get_page(page_number)
+        if paginator.num_pages > 1 and self.template is not None:
+            # The browsable API should display pagination controls.
+            self.display_page_controls = True
+
+        return list(self.page)
 
     def get_paginated_response(self, data):
         return Response(
