@@ -1,3 +1,9 @@
+## v3.12.1 (2024-08-19)
+
+### Refactor
+
+- **pagination**: optimize CustomPagination behavior
+
 ## v3.12.0 (2024-08-07)
 
 ### Feat
