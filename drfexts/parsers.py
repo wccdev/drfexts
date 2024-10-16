@@ -57,7 +57,7 @@ class CustomXLSXParser(BaseParser):
         Simply return a string representing the body of the request.
         """
         try:
-            workbook = load_workbook(stream._stream, read_only=True)
+            workbook = load_workbook(stream, read_only=True)
             sheet = workbook.active
             data = []
             headers = None
