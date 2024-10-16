@@ -1,3 +1,9 @@
+## v3.12.2 (2024-10-16)
+
+### Fix
+
+- **parsers**: getting data directly from stream
+
 ## v3.12.1 (2024-08-19)
 
 ### Refactor
