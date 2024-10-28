@@ -1,3 +1,9 @@
+## v3.12.3 (2024-10-28)
+
+### Fix
+
+- **parsers**: add CustomXLSXMultiPartParser
+
 ## v3.12.2 (2024-10-16)
 
 ### Fix
