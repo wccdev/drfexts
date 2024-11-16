@@ -15,6 +15,7 @@ import xlsxwriter
 from django.db.models.query import QuerySet
 from django.utils.encoding import force_str
 from django.utils.functional import Promise
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.renderers import BaseRenderer
 from rest_framework.settings import api_settings
@@ -56,7 +57,11 @@ class CustomJSONRenderer(BaseRenderer):
         if isinstance(obj, Promise):
             return force_str(obj)
         elif isinstance(obj, datetime.datetime):
+            if timezone.is_aware(obj):
+                obj = timezone.make_naive(obj)
             return obj.strftime(api_settings.DATETIME_FORMAT)
+        elif isinstance(obj, datetime.date):
+            return str(obj)
         elif isinstance(obj, Decimal):
             if api_settings.COERCE_DECIMAL_TO_STRING:
                 return str(obj)
@@ -68,6 +73,8 @@ class CustomJSONRenderer(BaseRenderer):
             return obj.tolist()
         elif hasattr(obj, "__iter__"):
             return list(item for item in obj)
+
+        return str(obj)
 
     def render(
         self,
