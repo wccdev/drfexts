@@ -95,8 +95,8 @@ class CustomJSONRenderer(BaseRenderer):
         """
         if response := renderer_context.get("response"):
             payload = {}
-            if hasattr(renderer_context.get("request"), "id"):
-                payload["request_id"] = renderer_context["request"].id
+            if hasattr(renderer_context.get("request"), "tracing_id"):
+                payload["tracing_id"] = renderer_context["request"].tracing_id
 
             payload["ret"] = response.status_code
             payload["msg"] = "success"
