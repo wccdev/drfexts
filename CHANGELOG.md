@@ -1,3 +1,9 @@
+## v3.12.5 (2024-11-26)
+
+### Refactor
+
+- **renderers**: rename request_id to tracing_id
+
 ## v3.12.4 (2024-11-16)
 
 ### Fix
