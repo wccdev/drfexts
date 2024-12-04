@@ -112,6 +112,7 @@ class SelectOnlyMixin:
 class ExtGenericViewSet(GenericViewSet):
     _default_key = "default"
     queryset_function_name = "process_queryset"
+    data_permission_class = None
     # The filter backend classes to use for queryset filtering
 
     def get_serializer_class(self):
@@ -193,6 +194,12 @@ class ExtGenericViewSet(GenericViewSet):
                 queryset = getattr(serializer_class, self.queryset_function_name)(
                     self.request, queryset
                 )
+
+        # add data permission
+        if data_permission_cls := getattr(self, "data_permission_class", None):
+            data_permission = data_permission_cls()
+            if perm_fuc := getattr(data_permission, f"{self.action}_permission", None):
+                queryset = perm_fuc(self.request, queryset)
 
         return queryset
 
