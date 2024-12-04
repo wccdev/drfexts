@@ -1,3 +1,9 @@
+## v3.13.0 (2024-12-04)
+
+### Feat
+
+- **permission**: support data permission class
+
 ## v3.12.5 (2024-11-26)
 
 ### Refactor
