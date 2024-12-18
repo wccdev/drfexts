@@ -1,9 +1,10 @@
+import contextlib
 from urllib import parse
 
 from django.core.paginator import InvalidPage
 from django.utils.encoding import force_str
 from rest_framework import pagination
-from rest_framework.pagination import CursorPagination
+from rest_framework.pagination import CursorPagination, _positive_int
 from rest_framework.response import Response
 
 from .paginators import WithoutCountPaginator
@@ -11,22 +12,15 @@ from .paginators import WithoutCountPaginator
 
 class CustomPagination(pagination.PageNumberPagination):
     page_size_query_param = "page_size"
-    max_page_size = 100000
+    max_page_size = 200000
 
     def paginate_queryset(self, queryset, request, view=None):
         """
         Paginate a queryset if required, either returning a
         page object, or `None` if pagination is not configured for this view.
         """
-        page_num = request.query_params.get(self.page_query_param)
-        # 判断，如果 page 为all 则取消分页返回所有
-        if page_num == "all":
-            request.query_params._mutable = True
-            request.query_params[self.page_query_param] = 1
-            request.query_params[self.page_size_query_param] = self.max_page_size
-            request.query_params._mutable = False
-
         self.request = request
+        self.skip_paginate = request.query_params.get(self.page_query_param) == "all"
         page_size = self.get_page_size(request)
         if not page_size:
             return None
@@ -40,11 +34,35 @@ class CustomPagination(pagination.PageNumberPagination):
 
         return list(self.page)
 
+    def get_page_number(self, request, paginator):
+        page_number = request.query_params.get(self.page_query_param)
+        if not page_number or self.skip_paginate:
+            page_number = 1
+
+        if page_number in self.last_page_strings:
+            page_number = paginator.num_pages
+        return page_number
+
+    def get_page_size(self, request):
+        if self.page_size_query_param:
+            with contextlib.suppress(KeyError, ValueError):
+                if self.skip_paginate:
+                    return self.max_page_size
+
+                return _positive_int(
+                    request.query_params[self.page_size_query_param],
+                    strict=True,
+                    cutoff=self.max_page_size,
+                )
+        return self.page_size
+
     def get_paginated_response(self, data):
         return Response(
             {
                 "total": self.page.paginator.count,
-                "page_size": self.page.paginator.per_page,
+                "page_size": self.page.paginator.per_page
+                if not self.skip_paginate
+                else self.page.paginator.count,
                 "current_page": self.page.number,
                 "results": data,
             }
