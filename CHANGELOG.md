@@ -1,3 +1,9 @@
+## v3.13.1 (2024-12-18)
+
+### Fix
+
+- **pagination**: optimize pagination
+
 ## v3.13.0 (2024-12-04)
 
 ### Feat
