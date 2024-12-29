@@ -1,3 +1,9 @@
+## v3.13.2 (2024-12-29)
+
+### Fix
+
+- remove some optimize queryset logic
+
 ## v3.13.1 (2024-12-18)
 
 ### Fix
