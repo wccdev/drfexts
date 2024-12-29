@@ -66,57 +66,57 @@ class WCCModelSerializer(FlexFieldsSerializerMixin, ModelSerializer):
     @classmethod
     def process_queryset(cls, request, queryset):
         if hasattr(cls, "_SELECT_RELATED_FIELDS"):
-            allow_fields = get_split_query_params(request.query_params, "fields")
-            omit_fields = get_split_query_params(request.query_params, "omit")
+            # allow_fields = get_split_query_params(request.query_params, "fields")
+            # omit_fields = get_split_query_params(request.query_params, "omit")
             related_fields = cls._SELECT_RELATED_FIELDS
-            if allow_fields:
-                related_fields = [
-                    field_name
-                    for field_name in cls._SELECT_RELATED_FIELDS
-                    if field_name in allow_fields
-                ]
-            if omit_fields:
-                related_fields = [
-                    field_name
-                    for field_name in cls._SELECT_RELATED_FIELDS
-                    if field_name not in omit_fields
-                ]
+            # if allow_fields:
+            #     related_fields = [
+            #         field_name
+            #         for field_name in cls._SELECT_RELATED_FIELDS
+            #         if field_name in allow_fields
+            #     ]
+            # if omit_fields:
+            #     related_fields = [
+            #         field_name
+            #         for field_name in cls._SELECT_RELATED_FIELDS
+            #         if field_name not in omit_fields
+            #     ]
             queryset = queryset.select_related(*related_fields)
 
         if hasattr(cls, "_PREFETCH_RELATED_FIELDS"):
-            allow_fields = get_split_query_params(request.query_params, "fields")
-            omit_fields = get_split_query_params(request.query_params, "omit")
+            # allow_fields = get_split_query_params(request.query_params, "fields")
+            # omit_fields = get_split_query_params(request.query_params, "omit")
             prefetch_fields = cls._PREFETCH_RELATED_FIELDS
-            if allow_fields:
-                prefetch_fields = [
-                    field_name
-                    for field_name in cls._PREFETCH_RELATED_FIELDS
-                    if field_name in allow_fields
-                ]
-            if omit_fields:
-                prefetch_fields = [
-                    field_name
-                    for field_name in cls._PREFETCH_RELATED_FIELDS
-                    if field_name not in omit_fields
-                ]
+            # if allow_fields:
+            #     prefetch_fields = [
+            #         field_name
+            #         for field_name in cls._PREFETCH_RELATED_FIELDS
+            #         if field_name in allow_fields
+            #     ]
+            # if omit_fields:
+            #     prefetch_fields = [
+            #         field_name
+            #         for field_name in cls._PREFETCH_RELATED_FIELDS
+            #         if field_name not in omit_fields
+            #     ]
             queryset = queryset.prefetch_related(*prefetch_fields)
 
         if hasattr(cls, "_ANNOTATE_FIELDS"):
-            allow_fields = get_split_query_params(request.query_params, "fields")
-            omit_fields = get_split_query_params(request.query_params, "omit")
+            # allow_fields = get_split_query_params(request.query_params, "fields")
+            # omit_fields = get_split_query_params(request.query_params, "omit")
             annotate_fields = cls._ANNOTATE_FIELDS
-            if allow_fields:
-                annotate_fields = {
-                    field_name: value
-                    for field_name, value in cls._ANNOTATE_FIELDS.items()
-                    if field_name in allow_fields
-                }
-            if omit_fields:
-                annotate_fields = {
-                    field_name: value
-                    for field_name, value in cls._ANNOTATE_FIELDS.items()
-                    if field_name not in omit_fields
-                }
+            # if allow_fields:
+            #     annotate_fields = {
+            #         field_name: value
+            #         for field_name, value in cls._ANNOTATE_FIELDS.items()
+            #         if field_name in allow_fields
+            #     }
+            # if omit_fields:
+            #     annotate_fields = {
+            #         field_name: value
+            #         for field_name, value in cls._ANNOTATE_FIELDS.items()
+            #         if field_name not in omit_fields
+            #     }
             queryset = queryset.annotate(**annotate_fields)
 
         return queryset
