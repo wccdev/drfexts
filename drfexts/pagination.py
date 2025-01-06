@@ -91,36 +91,7 @@ class CustomPagination(pagination.PageNumberPagination):
 
 class WithoutCountPagination(CustomPagination):
     has_next: bool = True
-
-    def paginate_queryset(self, queryset, request, view=None):
-        """
-        Paginate a queryset if required, either returning a
-        page object, or `None` if pagination is not configured for this view.
-        """
-        page_num = request.query_params.get(self.page_query_param)
-        # if page is "all", then return max size data
-        if page_num == "all":
-            request.query_params._mutable = True
-            request.query_params[self.page_query_param] = 1
-            request.query_params[self.page_size_query_param] = self.max_page_size
-            request.query_params._mutable = False
-
-        page_size = self.get_page_size(request)
-        if not page_size:
-            return None
-
-        paginator = WithoutCountPaginator(queryset, page_size)
-        page_number = request.query_params.get(self.page_query_param, 1)
-        if page_number in self.last_page_strings:
-            page_number = paginator.num_pages
-        self.request = request
-
-        try:
-            self.page = paginator.page(page_number)
-        except InvalidPage:
-            return []
-
-        return self.page
+    django_paginator_class = WithoutCountPaginator
 
     def get_next_link(self):
         if not getattr(self, "page", 0) or not self.page.paginator.has_next_page:
