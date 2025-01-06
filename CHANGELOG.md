@@ -1,3 +1,9 @@
+## v3.13.3 (2025-01-06)
+
+### Fix
+
+- fix WithoutCountPagination
+
 ## v3.13.2 (2024-12-29)
 
 ### Fix
