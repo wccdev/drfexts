@@ -17,8 +17,8 @@ class WithoutCountPaginator(Paginator):
         top = bottom + self.per_page
         top_with_extra = top + 1
         object_with_extra = list(self.object_list[bottom:top_with_extra])
-        if not object_with_extra:
-            raise EmptyPage(_("That page contains no results"))
+        # if not object_with_extra:
+        #     raise EmptyPage(_("That page contains no results"))
         if len(object_with_extra) >= self.per_page:
             object_with_extra = object_with_extra[:-1]
             self.has_next_page = True
