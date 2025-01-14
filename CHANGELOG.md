@@ -1,3 +1,9 @@
+## v3.13.4 (2025-01-14)
+
+### Fix
+
+- **core**: fix WithoutCountPaginator
+
 ## v3.13.3 (2025-01-06)
 
 ### Fix
