@@ -1,3 +1,9 @@
+## v3.13.5 (2025-04-22)
+
+### Fix
+
+- fix ExtendedCharFilter with ':'
+
 ## v3.13.4 (2025-01-14)
 
 ### Fix
