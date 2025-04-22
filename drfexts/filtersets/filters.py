@@ -272,7 +272,7 @@ class ExtendedCharFilter(CharFilter):
         super().__init__(*args, **kwargs)
 
     def filter(self, qs, value):
-        value, lookup_expr = value.split(":")
+        value, lookup_expr = value.rsplit(":", 1)
         if value in self.EMPTY_VALUES:
             return qs
 
