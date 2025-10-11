@@ -1,30 +1,52 @@
-from urllib import parse
-
-from django.core.paginator import InvalidPage
-from django.utils.encoding import force_str
-from rest_framework import pagination
-from rest_framework.pagination import CursorPagination
+from rest_framework.pagination import CursorPagination, PageNumberPagination
 from rest_framework.response import Response
+from django.core.paginator import EmptyPage, PageNotAnInteger
+from rest_framework.exceptions import NotFound
+from urllib.parse import urlparse, urlunparse
 
-from .paginators import WithoutCountPaginator
+from django.http import QueryDict
 
 
-class CustomPagination(pagination.PageNumberPagination):
+class CustomPagination(PageNumberPagination):
+    # 默认每页显示的条目数
+    page_size = 20
+
+    # 允许客户端通过查询参数设置每页条目数
     page_size_query_param = "page_size"
+
+    # 设置每页条目数的最大值
     max_page_size = 100000
 
-    def paginate_queryset(self, queryset, request, view=None):
-        page_num = request.query_params.get(self.page_query_param)
-        # 判断，如果 page 为all 则取消分页返回所有
-        if page_num == "all":
-            request.query_params._mutable = True
-            request.query_params[self.page_query_param] = 1
-            request.query_params[self.page_size_query_param] = self.max_page_size
-            request.query_params._mutable = False
+    # 设置页码的查询参数名称
+    page_query_param = "page"
 
-        return super().paginate_queryset(queryset, request, view)
+    def paginate_queryset(self, queryset, request, view=None):
+        """
+        重写分页查询方法，支持page=all参数
+        """
+        # 获取page参数的值
+        page_param = request.query_params.get(self.page_query_param)
+
+        if page_param == "all":
+            # 如果page=all，返回所有数据，不进行分页
+            self.page = None
+            self.request = request
+            return list(queryset)
+
+        try:
+            # 尝试执行默认的分页逻辑
+            return super().paginate_queryset(queryset, request, view)
+        except (NotFound, EmptyPage, PageNotAnInteger):
+            # 如果页码超出范围或无效，返回空列表
+            self.page = None
+            self.request = request
+            self._empty_page = True  # 标记这是一个空页面
+            return []
 
     def get_paginated_response(self, data):
+        """
+        重写分页响应方法，返回自定义格式
+        """
         return Response(
             {
                 "total": self.page.paginator.count,
@@ -58,77 +80,67 @@ class CustomPagination(pagination.PageNumberPagination):
 class WithoutCountPagination(CustomPagination):
     has_next: bool = True
 
-    def paginate_queryset(self, queryset, request, view=None):
+    def get_previous_link(self):
         """
-        Paginate a queryset if required, either returning a
-        page object, or `None` if pagination is not configured for this view.
+        获取上一页链接，如果没有上一页返回None
         """
-        page_num = request.query_params.get(self.page_query_param)
-        # if page is "all", then return max size data
-        if page_num == "all":
-            request.query_params._mutable = True
-            request.query_params[self.page_query_param] = 1
-            request.query_params[self.page_size_query_param] = self.max_page_size
-            request.query_params._mutable = False
-
-        page_size = self.get_page_size(request)
-        if not page_size:
+        if not self.page.has_previous():
             return None
 
-        paginator = WithoutCountPaginator(queryset, page_size)
-        page_number = request.query_params.get(self.page_query_param, 1)
-        if page_number in self.last_page_strings:
-            page_number = paginator.num_pages
-        self.request = request
-
-        try:
-            self.page = paginator.page(page_number)
-        except InvalidPage:
-            return []
-
-        return self.page
+        page_number = self.page.previous_page_number()
+        return self.get_page_link(page_number)
 
     def get_next_link(self):
-        if not getattr(self, "page", 0) or not self.page.paginator.has_next_page:
+        """
+        获取下一页链接，如果没有下一页返回None
+        """
+        if not self.page.has_next():
             return None
-        url = self.request.build_absolute_uri()
+
         page_number = self.page.next_page_number()
-        return self.replace_query_param(url, self.page_query_param, page_number)
+        return self.get_page_link(page_number)
 
-    def get_previous_link(self):
-        if not getattr(self, "page", 0) or not self.page.paginator.has_previous_page:
-            return None
+    def get_page_link(self, page_number):
+        """
+        构建页面链接
+        """
         url = self.request.build_absolute_uri()
-        page_number = self.page.previous_page_number()
-        if page_number == 1:
-            return self.remove_query_param(url, self.page_query_param)
         return self.replace_query_param(url, self.page_query_param, page_number)
 
-    @staticmethod
-    def replace_query_param(url, key, val):
+    def replace_query_param(self, url, key, val):
         """
-        Given a URL and a key/val pair, set or replace an item in the query
-        parameters of the URL, and return the new URL.
+        替换URL中的查询参数
         """
-        (_, _, path, query, fragment) = parse.urlsplit(force_str(url))
-        query_dict = parse.parse_qs(query, keep_blank_values=True)
-        query_dict[force_str(key)] = [force_str(val)]
-        query = parse.urlencode(sorted(list(query_dict.items())), doseq=True)
-        return parse.urlunsplit(("", "", path, query, fragment))
 
-    @staticmethod
-    def remove_query_param(url, key):
-        """
-        Given a URL and a key/val pair, remove an item in the query
-        parameters of the URL, and return the new URL.
-        """
-        (_, _, path, query, fragment) = parse.urlsplit(force_str(url))
-        query_dict = parse.parse_qs(query, keep_blank_values=True)
-        query_dict.pop(key, None)
-        query = parse.urlencode(sorted(list(query_dict.items())), doseq=True)
-        return parse.urlunsplit(("", "", path, query, fragment))
+        parsed = urlparse(url)
+        query_dict = QueryDict(parsed.query, mutable=True)
+        query_dict[key] = val
+
+        return urlunparse(
+            (
+                parsed.scheme,
+                parsed.netloc,
+                parsed.path,
+                parsed.params,
+                query_dict.urlencode(),
+                parsed.fragment,
+            )
+        )
 
     def get_paginated_response(self, data):
+        """
+        重写分页响应方法，返回自定义格式
+        """
+        if self.page is None:
+            # 如果page=all，返回所有数据，previous和next为空字符串
+            return Response(
+                {
+                    "previous": "",
+                    "next": "",
+                    "results": data,
+                }
+            )
+        # 正常分页情况，返回自定义格式
         return Response(
             {
                 "previous": self.get_previous_link(),
