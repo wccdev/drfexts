@@ -1,3 +1,9 @@
+## v1.5.0 (2025-10-11)
+
+### Feat
+
+- **pagination**: enhance CustomPagination with support for 'all' parameter and improved error handling
+
 ## v1.4.0 (2023-09-01)
 
 ### Feat
