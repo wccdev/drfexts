@@ -118,8 +118,8 @@ class WithoutCountPagination(CustomPagination):
 
         return urlunparse(
             (
-                parsed.scheme,
-                parsed.netloc,
+                "",
+                "",
                 parsed.path,
                 parsed.params,
                 query_dict.urlencode(),

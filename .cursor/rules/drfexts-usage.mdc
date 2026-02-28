@@ -1,0 +1,109 @@
+---
+description: Django REST Framework project conventions using drfexts extension package. Enforces using drfexts components instead of reinventing common patterns.
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# drfexts 使用规范
+
+本项目使用 `drfexts` 扩展包。在编写 Django REST Framework 代码时，**必须优先使用 drfexts 提供的组件**，禁止重复实现已有功能。
+
+## 模型定义
+
+- 继承 `drfexts.models` 中的抽象基类，不要手动添加 status/created_at/updated_at/created_by/updated_by 字段
+- 从 `drfexts.fields` 导入字段类型，不要从 `django.db.models` 直接导入
+
+```python
+# WRONG - 手动定义审计字段
+from django.db import models
+class Product(models.Model):
+    name = models.CharField(max_length=128)
+    status = models.IntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+# CORRECT - 使用 drfexts 基类
+from drfexts.models import BaseCreatorModel
+from drfexts.fields import CharField, DecimalField, VirtualForeignKey
+
+class Product(BaseCreatorModel):
+    name = CharField("商品名称", max_length=128)
+    price = DecimalField("价格", max_digits=10, decimal_places=2)
+    category = VirtualForeignKey(Category, verbose_name="分类")
+    class Meta:
+        verbose_name = "商品"
+```
+
+可用基类选择：
+- `BaseModel` — status + timestamps
+- `BaseCodeModel` — auto code + status + timestamps
+- `BaseCreatorModel` — status + audit user + timestamps
+- `SimpleBaseModel` — 二态 status + timestamps
+- `UUIDModel` — UUID pk + status + timestamps
+- `AuditModel` — status + audit_status + audit user + timestamps
+
+外键使用 `VirtualForeignKey`（db_constraint=False），一对一使用 `OneToOneField`，多对多使用 `VirtualManyToMany`。
+
+## 序列化器
+
+- 使用 `drfexts.serializers.serializers.WCCModelSerializer` 作为默认序列化器基类
+- 关联字段自动使用 `ComplexPKRelatedField`（输出 `{id, label}` 格式）
+- 选择字段显示用 `DisplayChoiceField`
+
+```python
+from drfexts.serializers.serializers import WCCModelSerializer
+
+class ProductSerializer(WCCModelSerializer):
+    class Meta:
+        model = Product
+        fields = "__all__"
+
+    @classmethod
+    def process_queryset(cls, request, queryset):
+        return queryset.select_related("category")
+```
+
+## 视图集
+
+- 使用 `ExtGenericViewSet` 替代 `GenericViewSet`
+- 多 action 不同序列化器用 dict: `serializer_class = {"default": ListSer, "retrieve": DetailSer}`
+- 需要导出加 `ExportMixin`
+- 需要查询优化加 `EagerLoadingMixin` 或 `SelectOnlyMixin`
+
+```python
+from drfexts.viewsets import ExtGenericViewSet, ExportMixin
+
+class ProductViewSet(ExportMixin, ListModelMixin, ExtGenericViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+```
+
+## 过滤器
+
+- 全局配置 `AutoFilterBackend`，无需手动编写 filterset_class
+- 排序使用 `OrderingFilterBackend`（支持序列化器字段名）
+- 需要覆盖过滤行为时用视图的 `filterset_fields_overwrite`
+
+## 分页
+
+- 默认使用 `drfexts.pagination.CustomPagination`（支持 page=all）
+- 大数据量用 `WithoutCountPagination`
+- 导出场景用 `BigPagePagination`
+- 实时流用 `CursorSetPagination`
+
+## 渲染器和解析器
+
+- JSON 渲染使用 `CustomJSONRenderer`（orjson 高性能，统一 `{ret, msg, data}` 格式）
+- JSON 解析使用 `CustomJSONParser`（orjson）
+- 导出由 ExportMixin 自动处理
+
+## 路由
+
+使用 `OptionalSlashRouter` 替代 `DefaultRouter`。
+
+## 状态查询
+
+使用 `StatusQuerySet` 提供的方法：
+- `Model.objects.editable()` — 排除已删除和已失效
+- `Model.objects.active()` — 已生效+暂停中+待失效
+- `Model.objects.valid()` — 仅已生效
